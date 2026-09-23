@@ -19,5 +19,5 @@ The Python code implements standardized ridge regression, leave-one-city-out eva
 A flag is not a finding of error, contamination or health risk. Conformal coverage is marginal under its assumptions; site-specific deployment requires local validation. This demo has no authenticated reviewer identity, audit trail or measured impact.
 
 ## Links to add
-- Public repository: _add after clean publication_
+- Public repository: https://github.com/leorao-enming/stream-risk-envelope-public
 - Demo video: _add after recording_
