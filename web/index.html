@@ -141,6 +141,10 @@
   .queue-head h2 { margin-bottom: 4px; }
   button.reset { color: var(--muted); padding: 4px 7px; }
   .progress { color: var(--muted); font: 11.5px var(--mono); margin-bottom: 8px; }
+  .queue-review-link { display: inline-block; color: var(--accent); font-size: 12px;
+                       margin-bottom: 8px; text-underline-offset: 3px; }
+  .queue-review-link[hidden] { display: none; }
+  #detail-heading { scroll-margin-top: 16px; }
 
   .bar { display: flex; width: 100%; height: 30px; border-radius: 5px;
          overflow: hidden; margin: 12px 0 8px; }
@@ -214,7 +218,7 @@
     <div class="proof"><b id="hero-coverage">—</b><span>held-out coverage on synthetic observations</span></div>
     <div class="proof"><b id="hero-cities">—</b><span>fictional demo cities used for held-out folds</span></div>
   </div>
-  <a class="hero-link" href="#queue-heading">Work the review queue &darr;</a>
+  <a class="hero-link" href="#detail-heading">Review the selected site &darr;</a>
 </header>
 
 <main id="main">
@@ -271,7 +275,7 @@
     </details>
 
     <details class="evidence">
-      <summary>Inspect synthetic results, method and deployment limits</summary>
+      <summary>Inspect synthetic results, method and limitations</summary>
       <h2>How the example works</h2>
       <div class="note">The five fictional city groups are held out one at a time. A ridge model predicts one invented indicator from another; a separate calibration split sets the conformal envelope. A reading outside that envelope enters the human review queue. All figures below are calculated from the synthetic fixture.</div>
       <h2>Illustrative operating characteristics</h2>
@@ -289,6 +293,8 @@
         <div class="step"><span class="num">next</span><strong>City-specific calibration</strong><span>Use local history when a city has enough repeated observations.</span></div>
         <div class="step"><span class="num">then</span><strong>Monitoring integration</strong><span>Connect intake, reviewer identity and audit export after governance review.</span></div>
       </div>
+      <h2 id="limitations-heading">Limitations</h2>
+      <div id="lims"></div>
     </details>
   </div>
 
@@ -302,13 +308,12 @@
       <button class="reset" id="reset-decisions" type="button">Reset demo decisions</button>
     </div>
     <div class="progress" id="review-progress" role="status" aria-live="polite"></div>
+    <a class="queue-review-link" id="queue-review-link" href="#detail-heading">Open decision controls for the selected site &uarr;</a>
     <ul class="queue" id="queue" aria-labelledby="queue-heading"></ul>
 
     <h2>Where the queue comes from</h2>
     <div id="bycity"></div>
 
-    <h2>Limitations</h2>
-    <div id="lims"></div>
   </div>
 </main>
 
@@ -601,6 +606,7 @@ function syncQueueCurrent() {
 function drawQueue(rows) {
   const flagged = rows.filter(r => r.state === "outside_envelope")
                       .sort((a, b) => b.distanceOutside - a.distanceOutside);
+  $("queue-review-link").hidden = flagged.length === 0;
   const reviewed = flagged.filter(r => decisions[r.site]).length;
   $("qn").textContent = `(${flagged.length})`;
   $("review-progress").textContent = `${reviewed} of ${flagged.length} priority records have a human disposition`;
@@ -644,12 +650,12 @@ function showDetail(r) {
       ? `<div class="row"><span>distance outside</span><span>${fmt(r.distanceOutside)}</span></div>` : ""}
     <div style="border-top:1px solid var(--line);margin:9px 0 6px"></div>
     ${others}
+    ${reviewBox}
     <div class="note" style="margin:10px 0 0;font-size:12.5px">
       A flag means this reading does not match the co-variation seen across the
       cohort and is worth re-checking. It is not a finding of contamination, and
       not a statement about human health.
-    </div>
-    ${reviewBox}`;
+    </div>`;
   $("detail").querySelectorAll("button[data-review]").forEach(button =>
     button.addEventListener("click", () => recordDecision(r.site, button.dataset.review)));
 }
