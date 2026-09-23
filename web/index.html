@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stream Risk Envelope</title>
+<style>
+  :root {
+    --bg: #0f1418; --panel: #161d23; --line: #26313a; --ink: #e6edf3;
+    --muted: #8b9aa7; --accent: #4fb3d9; --ok: #3fa06a; --flag: #d97757;
+    --abstain: #9a8c5c; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .skip { position: absolute; left: -9999px; top: 0; z-index: 20; }
+  .skip:focus { left: 10px; top: 10px; background: var(--accent); color: #07171f;
+                padding: 9px 14px; border-radius: 6px; font-weight: 600; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  header { padding: 28px 28px 24px; border-bottom: 1px solid var(--line); }
+  .eyebrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+             color: var(--muted); font: 11.5px var(--mono); margin-bottom: 12px; }
+  .track { color: var(--accent); border: 1px solid rgba(79,179,217,.45);
+           border-radius: 999px; padding: 3px 9px; }
+  h1 { margin: 0 0 8px; font-size: clamp(25px, 4vw, 42px); line-height: 1.08;
+       letter-spacing: -0.035em; max-width: 820px; }
+  .sub { color: var(--muted); font-size: 15px; max-width: 78ch; }
+  .sub strong { color: var(--ink); font-weight: 600; }
+  .synthetic-banner { margin: 16px 0 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(79,179,217,.10); font-weight: 600; }
+  .hero-proof { display: grid; grid-template-columns: repeat(3, minmax(0, 190px));
+                gap: 10px; margin-top: 20px; }
+  .proof { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+           padding: 11px 13px; }
+  .proof b { display: block; color: var(--ink); font: 600 22px var(--mono); }
+  .proof span { color: var(--muted); font-size: 11.5px; }
+  .hero-link { display: inline-block; margin-top: 16px; color: var(--accent);
+               text-underline-offset: 3px; font-weight: 600; }
+  main { display: grid; grid-template-columns: minmax(0,1fr) 380px; gap: 0; }
+  @media (max-width: 1040px) { main { grid-template-columns: 1fr; } }
+  .left { padding: 20px 28px 40px; min-width: 0; }
+  .right { border-left: 1px solid var(--line); padding: 20px 22px 40px; min-width: 0; }
+  @media (max-width: 1040px) { .right { border-left: none; border-top: 1px solid var(--line); } }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--muted); margin: 26px 0 10px; font-weight: 600; }
+  h2:first-child { margin-top: 0; }
+
+  .workflow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+              margin: 0 0 18px; }
+  .step { min-height: 118px; border: 1px solid var(--line); border-radius: 8px;
+          background: var(--panel); padding: 12px 13px; }
+  .step .num { display: block; color: var(--accent); font: 11px var(--mono); margin-bottom: 6px; }
+  .step strong { display: block; font-size: 13px; margin-bottom: 4px; }
+  .step span { color: var(--muted); font-size: 12px; }
+  .scope { margin: -8px 0 18px; color: var(--muted); font-size: 12px; }
+
+  .control { background: var(--panel); border: 1px solid var(--line);
+             border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+  .control label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .ticks { display: flex; justify-content: space-between; font: 11px var(--mono);
+           color: var(--muted); margin-top: 4px; }
+  .readout { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px;
+             font: 12.5px var(--mono); }
+  .readout b { color: var(--ink); font-weight: 600; }
+
+  svg { width: 100%; height: auto; display: block; }
+  .axis { stroke: var(--line); stroke-width: 1; }
+  .axis-label { fill: var(--muted); font-size: 11px; }
+  .grid { stroke: var(--line); stroke-width: .5; stroke-dasharray: 2 4; }
+  .band { fill: var(--accent); opacity: .13; }
+  .band-edge { stroke: var(--accent); stroke-width: 1; fill: none; opacity: .5; }
+  .fit { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+
+  /* State is carried by shape as well as colour: filled disc, ringed disc and
+     hollow ring stay distinguishable without colour vision. */
+  circle.pt { cursor: pointer; }
+  circle.pt.consistent { fill: var(--ok); stroke: var(--bg); stroke-width: 1; }
+  circle.pt.outside_envelope { fill: var(--flag); stroke: var(--ink); stroke-width: 1.6; }
+  circle.pt.insufficient_evidence { fill: none; stroke: var(--abstain); stroke-width: 2; }
+  circle.pt.sel { stroke: var(--ink); stroke-width: 3; }
+  circle.pt:focus { outline: none; }
+  circle.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px;
+            color: var(--muted); margin-top: 10px; align-items: center; }
+  .legend .mk { margin-right: 6px; vertical-align: -2px; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  kbd { font: 11px var(--mono); border: 1px solid var(--line); border-bottom-width: 2px;
+        border-radius: 4px; padding: 1px 5px; color: var(--ink); }
+
+  table { width: 100%; border-collapse: collapse; font: 12.5px var(--mono); }
+  th, td { text-align: right; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; padding: 5px 8px; }
+  td { padding: 5px 8px; }
+  tr.active td { background: rgba(79,179,217,.10); color: var(--ink); }
+  th:first-child, td:first-child { text-align: left; }
+  .lvlbtn { all: unset; cursor: pointer; display: block; width: 100%; }
+  .lvlbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .queue { list-style: none; margin: 0; padding: 0; }
+  .queue li { border-bottom: 1px solid var(--line); }
+  .qbtn { all: unset; box-sizing: border-box; cursor: pointer; display: flex;
+          justify-content: space-between; gap: 10px; width: 100%; padding: 9px 4px; }
+  .qbtn:hover { background: rgba(255,255,255,.03); }
+  .qbtn[aria-current="true"] { background: rgba(79,179,217,.10); }
+  .qbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .queue .code { font: 12.5px var(--mono); }
+  .queue .city { color: var(--muted); font-size: 12px; }
+  .queue .dev { font: 12.5px var(--mono); color: var(--flag); }
+  .queue .decision { display: block; margin-top: 2px; color: var(--ok); font-size: 11px; }
+  .queue .empty { padding: 9px 4px; color: var(--muted); font-size: 13px; }
+
+  .detail { background: var(--panel); border: 1px solid var(--line);
+            border-radius: 8px; padding: 14px 16px; font-size: 13.5px; }
+  .detail .row { display: flex; justify-content: space-between; padding: 3px 0;
+                 font: 12.5px var(--mono); }
+  .detail .row span:first-child { color: var(--muted); }
+  .state { display: inline-block; padding: 2px 9px; border-radius: 999px;
+           font-size: 11.5px; font-weight: 600; margin-bottom: 8px; }
+  .state.consistent { background: rgba(63,160,106,.18); color: var(--ok); }
+  .state.outside_envelope { background: rgba(217,119,87,.18); color: var(--flag); }
+  .state.insufficient_evidence { background: rgba(154,140,92,.18); color: var(--abstain); }
+  .review-box { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+  .review-box strong { display: block; font-size: 12.5px; margin-bottom: 7px; }
+  .review-actions { display: grid; gap: 7px; }
+  button.action, button.reset { appearance: none; color: var(--ink); background: transparent;
+                                border: 1px solid var(--line); border-radius: 6px;
+                                cursor: pointer; font: 12px/1.3 inherit; }
+  button.action { width: 100%; text-align: left; padding: 8px 10px; }
+  button.action:hover, button.action[aria-pressed="true"] { border-color: var(--accent);
+                                                            background: rgba(79,179,217,.10); }
+  button.action[aria-pressed="true"]::after { content: "  ✓"; color: var(--accent); }
+  .review-note { color: var(--muted); font-size: 11.5px; margin-top: 7px; }
+  .queue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .queue-head h2 { margin-bottom: 4px; }
+  button.reset { color: var(--muted); padding: 4px 7px; }
+  .progress { color: var(--muted); font: 11.5px var(--mono); margin-bottom: 8px; }
+
+  .bar { display: flex; width: 100%; height: 30px; border-radius: 5px;
+         overflow: hidden; margin: 12px 0 8px; }
+  .bar div { display: flex; align-items: center; justify-content: center;
+             font: 11px var(--mono); color: #07171f; font-weight: 600; }
+  .barkey { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px;
+            color: var(--muted); margin-bottom: 4px; }
+  .barkey i { display: inline-block; width: 9px; height: 9px; border-radius: 2px;
+              margin-right: 6px; vertical-align: -1px; }
+  details.alt { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px;
+                background: var(--panel); }
+  details.alt > summary { cursor: pointer; padding: 10px 14px; font-size: 13px;
+                          color: var(--muted); list-style: none; }
+  details.alt > summary::-webkit-details-marker { display: none; }
+  details.alt > summary::before { content: "B8 "; color: var(--accent); }
+  details.alt[open] > summary::before { content: "BE "; }
+  details.alt > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .altwrap { max-height: 340px; overflow: auto; padding: 0 14px 12px; }
+  .altwrap td.v-outside_envelope { color: var(--flag); }
+  .altwrap td.v-insufficient_evidence { color: var(--abstain); }
+
+  .flip td.neg { color: var(--flag); }
+  .flip td.pos { color: var(--ok); }
+
+  .note { border-left: 2px solid var(--line); padding: 2px 0 2px 13px;
+          color: var(--muted); font-size: 13px; margin: 9px 0; }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .warn { border-left-color: var(--flag); }
+  details.evidence { margin-top: 22px; border-top: 1px solid var(--line); }
+  details.evidence > summary { cursor: pointer; padding: 16px 0 4px; color: var(--accent);
+                               font-weight: 600; list-style-position: outside; }
+  .deployment { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .deployment .step { min-height: 96px; }
+  .fatal { background: var(--panel); border-radius: 8px; padding: 16px 18px; margin: 20px 0; }
+  .fatal pre { font: 12.5px var(--mono); color: var(--accent); background: var(--bg);
+               padding: 10px 12px; border-radius: 6px; overflow-x: auto; margin: 10px 0 0; }
+  footer { padding: 18px 28px 34px; color: var(--muted); font-size: 12px;
+           border-top: 1px solid var(--line); }
+  code { font: 12px var(--mono); color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 720px) {
+    header, .left, .right, footer { padding-left: 16px; padding-right: 16px; }
+    .hero-proof { grid-template-columns: 1fr; }
+    .workflow, .deployment { grid-template-columns: 1fr; }
+    .step { min-height: auto; }
+    .readout { gap: 8px 16px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#queue-heading">Skip to the review queue</a>
+
+<header>
+  <div class="eyebrow">
+    <span class="track">IEEE OneAquaHealth 2026 · Track 3</span>
+    <span>Stream Risk Envelope</span>
+    <span>SYNTHETIC DEMO</span>
+  </div>
+  <h1>Turn stream measurements into a defensible human review queue.</h1>
+  <div class="sub">
+    For <strong>monitoring coordinators and research QA reviewers</strong>: identify
+    which records deserve attention, see the evidence behind every flag, and record
+    a human disposition. The model prioritises; the reviewer decides.
+  </div>
+  <div class="synthetic-banner">Synthetic demonstration: every site, indicator value and result below is invented. No OneAquaHealth measurements are included.</div>
+  <div class="hero-proof" aria-label="Illustrative synthetic demo results">
+    <div class="proof"><b id="hero-queue">—</b><span>fictional records queued at this operating point</span></div>
+    <div class="proof"><b id="hero-coverage">—</b><span>held-out coverage on synthetic observations</span></div>
+    <div class="proof"><b id="hero-cities">—</b><span>fictional demo cities used for held-out folds</span></div>
+  </div>
+  <a class="hero-link" href="#queue-heading">Work the review queue &darr;</a>
+</header>
+
+<main id="main">
+  <div class="left">
+    <h2>From observation to accountable action</h2>
+    <div class="workflow" aria-label="Four step review workflow">
+      <div class="step"><span class="num">01 · observe</span><strong>Measurements arrive</strong><span>Stream indicators enter the monitoring record.</span></div>
+      <div class="step"><span class="num">02 · check</span><strong>Envelope tests consistency</strong><span>Uncertainty is calibrated on held-out cities.</span></div>
+      <div class="step"><span class="num">03 · prioritise</span><strong>Exceptions form a queue</strong><span>Evidence and workload stay visible.</span></div>
+      <div class="step"><span class="num">04 · decide</span><strong>A person records the outcome</strong><span>Accept, re-check, or escalate context.</span></div>
+    </div>
+    <p class="scope"><strong>Evidence boundary:</strong> this page illustrates the review workflow with invented values. It does not report validation on OneAquaHealth measurements.</p>
+
+    <div class="control">
+      <label for="lvl">Confidence level &mdash; you choose the operating point</label>
+      <input type="range" id="lvl" min="0" max="4" step="1" value="3"
+             aria-describedby="readout" aria-valuetext="80 percent nominal confidence">
+      <div class="ticks" aria-hidden="true">
+        <span>50%</span><span>60%</span><span>70%</span><span>80%</span><span>90%</span>
+      </div>
+      <div class="readout" id="readout" role="status" aria-live="polite" aria-atomic="true">
+        <span>nominal <b id="r-nom">80%</b></span>
+        <span>synthetic coverage <b id="r-emp">—</b></span>
+        <span>envelope width <b id="r-wid">—</b></span>
+        <span>queued for review <b id="r-flag">—</b> / <b id="r-total">—</b></span>
+      </div>
+    </div>
+
+    <svg id="plot" viewBox="0 0 720 470" role="group"
+         aria-labelledby="plot-title" aria-describedby="plot-desc"></svg>
+    <h2 id="plot-title" class="vh">Pathogen indicator against faecal indicator</h2>
+    <p id="plot-desc" class="vh"></p>
+
+    <div class="legend">
+      <span><svg class="mk" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4.4"
+        fill="var(--ok)"/></svg>consistent</span>
+      <span><svg class="mk" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5"
+        fill="var(--flag)" stroke="var(--ink)" stroke-width="1.6"/></svg>outside envelope &mdash; re-check</span>
+      <span><svg class="mk" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4.2"
+        fill="none" stroke="var(--abstain)" stroke-width="2"/></svg>envelope too wide to judge</span>
+    </div>
+    <p class="hint">
+      The plot is keyboard reachable: <kbd>Tab</kbd> into it, then
+      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> to move between sites,
+      <kbd>Home</kbd> / <kbd>End</kbd> for the extremes, and <kbd>f</kbd> to jump
+      to the next queued site. ARIA on SVG shapes is unevenly supported, so the
+      same data is also below as an ordinary table — that is the path that works
+      everywhere.
+    </p>
+
+    <details class="alt">
+      <summary id="alt-summary">Every site as a table</summary>
+      <div class="altwrap" id="alltable"></div>
+    </details>
+
+    <details class="evidence">
+      <summary>Inspect synthetic results, method and deployment limits</summary>
+      <h2>How the example works</h2>
+      <div class="note">The five fictional city groups are held out one at a time. A ridge model predicts one invented indicator from another; a separate calibration split sets the conformal envelope. A reading outside that envelope enters the human review queue. All figures below are calculated from the synthetic fixture.</div>
+      <h2>Illustrative operating characteristics</h2>
+      <table id="oc">
+        <caption class="vh">Synthetic coverage and review workload at each confidence level</caption>
+        <thead><tr><th scope="col">nominal</th><th scope="col">synthetic</th>
+          <th scope="col">width</th><th scope="col">of range</th><th scope="col">queued</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="note warn">These held-out results describe only the invented fixture. They cannot establish real-world calibration, cross-city transfer or operational impact.</div>
+
+      <h2>Deployment path</h2>
+      <div class="deployment">
+        <div class="step"><span class="num">now</span><strong>Offline proof of concept</strong><span>Static, reproducible and usable without network access.</span></div>
+        <div class="step"><span class="num">next</span><strong>City-specific calibration</strong><span>Use local history when a city has enough repeated observations.</span></div>
+        <div class="step"><span class="num">then</span><strong>Monitoring integration</strong><span>Connect intake, reviewer identity and audit export after governance review.</span></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="right">
+    <h2 id="detail-heading">Selected site</h2>
+    <div class="detail" id="detail" role="region" aria-labelledby="detail-heading"
+         aria-live="polite"><span class="city">Select a point or a queued site.</span></div>
+
+    <div class="queue-head">
+      <h2 id="queue-heading">Review queue <span id="qn" style="color:var(--muted)"></span></h2>
+      <button class="reset" id="reset-decisions" type="button">Reset demo decisions</button>
+    </div>
+    <div class="progress" id="review-progress" role="status" aria-live="polite"></div>
+    <ul class="queue" id="queue" aria-labelledby="queue-heading"></ul>
+
+    <h2>Where the queue comes from</h2>
+    <div id="bycity"></div>
+
+    <h2>Limitations</h2>
+    <div id="lims"></div>
+  </div>
+</main>
+
+<footer id="foot"></footer>
+
+<script src="data.js"></script>
+<script>
+const LEVELS = ["50","60","70","80","90"];
+const PRED_KEY = "scaledPathogenRisk";   // key under which `others` holds the predictor
+const STATE_LABEL = {
+  consistent: "consistent with the cohort",
+  outside_envelope: "outside envelope — re-check",
+  insufficient_evidence: "envelope too wide to judge",
+};
+const REVIEW_KEY = "sre:synthetic-review-decisions:v1";
+const REVIEW_LABEL = {
+  plausible: "accepted as plausible",
+  recheck: "field re-check requested",
+  context: "context escalation requested",
+};
+
+let DATA = null, level = "80", selected = null, order = [], decisions = loadDecisions();
+
+const $ = id => document.getElementById(id);
+const fmt = (v, n = 3) => Number(v).toFixed(n);
+
+function loadDecisions() {
+  try { return JSON.parse(localStorage.getItem(REVIEW_KEY) || "{}"); }
+  catch (_) { return {}; }
+}
+
+function saveDecisions() {
+  try { localStorage.setItem(REVIEW_KEY, JSON.stringify(decisions)); }
+  catch (_) { /* The demo still works when browser storage is unavailable. */ }
+}
+
+if (window.__DATA) { DATA = window.__DATA; boot(); } else { fail(); }
+
+function fail() {
+  $("main").innerHTML = `
+    <div class="left"><div class="note warn fatal">
+      <strong>data.js was not found, so there is nothing to show.</strong>
+      Rebuild the synthetic fixture, then reload this page:
+      <pre>uv run --locked python -m src.sre.build</pre>
+    </div></div>`;
+}
+
+function boot() {
+  const idx = LEVELS.indexOf(DATA.meta.defaultLevel);
+  if (idx >= 0) { level = DATA.meta.defaultLevel; $("lvl").value = idx; }
+
+  $("lvl").addEventListener("input", e => {
+    level = LEVELS[+e.target.value];
+    e.target.setAttribute("aria-valuetext", level + " percent nominal confidence");
+    render();
+  });
+  $("reset-decisions").addEventListener("click", () => {
+    decisions = {};
+    saveDecisions();
+    render();
+  });
+
+  $("lims").innerHTML = DATA.limitations.map(t => `<div class="note">${t}</div>`).join("");
+
+  $("foot").textContent = `${DATA.meta.sites} invented sites across ${DATA.meta.cities.length} fictional cities. ${DATA.meta.source}. Fixture ${DATA.meta.fixtureVersion}.`;
+  $("hero-cities").textContent = DATA.meta.cities.length;
+
+  renderOC();
+  render();
+}
+
+// The plot carries role="button" on each <circle>, but ARIA on SVG shapes is not
+// reliably surfaced by assistive technology. This table is the guaranteed path to
+// the same information, and it reaches all fictional sites rather than only the queued
+// ones. Sighted users get a scannable listing out of it too.
+function renderTable(rows) {
+  const body = rows.slice()
+    .sort((a, b) => b.distanceOutside - a.distanceOutside || a.site.localeCompare(b.site))
+    .map(r => `<tr>
+      <td>${r.site}</td><td>${r.city}</td>
+      <td>${fmt(r.others[PRED_KEY])}</td><td>${fmt(r.observed)}</td>
+      <td>${fmt(r.low)} – ${fmt(r.high)}</td>
+      <td class="v-${r.state}">${STATE_LABEL[r.state]}</td></tr>`).join("");
+  $("alltable").innerHTML = `
+    <table>
+      <caption class="vh">Every fictional demo site with its measurement, envelope and verdict</caption>
+      <thead><tr>
+        <th scope="col">site</th><th scope="col">city</th>
+        <th scope="col">${DATA.meta.predictor}</th>
+        <th scope="col">${DATA.meta.target}</th>
+        <th scope="col">envelope</th><th scope="col">verdict</th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table>`;
+  $("alt-summary").textContent = `Every site as a table (${rows.length})`;
+}
+
+function renderByCity(rows) {
+  const per = {};
+  rows.forEach(r => {
+    const c = (per[r.city] ||= { n: 0, flagged: 0, width: r.width });
+    c.n++;
+    if (r.state === "outside_envelope") c.flagged++;
+  });
+  const names = Object.keys(per).sort((a, b) => per[b].flagged / per[b].n - per[a].flagged / per[a].n);
+  const body = names.map(c => {
+    const s = per[c];
+    return `<tr><td>${c}</td><td>${s.flagged}</td><td>${s.n}</td>
+      <td>${s.n ? Math.round(100 * s.flagged / s.n) : 0}%</td>
+      <td>${s.width.toFixed(3)}</td></tr>`;
+  }).join("");
+  $("bycity").innerHTML = `
+    <table>
+      <caption class="vh">Flag rate and envelope width for each city</caption>
+      <thead><tr><th scope="col">city</th><th scope="col">queued</th>
+        <th scope="col">n</th><th scope="col">rate</th><th scope="col">width</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <div class="note warn">
+      The queue is <strong>not evenly spread</strong>, and the reason is the
+      method rather than the data: split conformal guarantees coverage across the
+      whole cohort, not within each city, so cities the model fits less well get
+      flagged more often. Read this table before deciding where to spend review
+      time.
+    </div>`;
+}
+
+function renderOC() {
+  $("oc").querySelector("tbody").innerHTML = DATA.operatingCurve.map(r => {
+    const pct = Math.round(r.nominal * 100);
+    return `<tr data-lvl="${pct}">
+      <td><button class="lvlbtn" data-lvl="${pct}">${pct}%</button></td>
+      <td>${Math.round(r.empirical*100)}%</td><td>${fmt(r.meanWidth)}</td>
+      <td>${Math.round(r.widthFractionOfRange*100)}%</td><td>${r.flagged}</td></tr>`;
+  }).join("");
+  $("oc").querySelectorAll("button.lvlbtn").forEach(b => b.addEventListener("click", () => {
+    const l = b.dataset.lvl;
+    if (!LEVELS.includes(l)) return;
+    level = l;
+    $("lvl").value = LEVELS.indexOf(l);
+    $("lvl").setAttribute("aria-valuetext", l + " percent nominal confidence");
+    render();
+  }));
+}
+
+function render() {
+  const rows = DATA.levels[level];
+  const oc = DATA.operatingCurve.find(r => Math.round(r.nominal*100) == +level);
+
+  $("r-nom").textContent  = level + "%";
+  $("r-emp").textContent  = Math.round(oc.empirical * 100) + "%";
+  $("r-wid").textContent  = fmt(oc.meanWidth, 2);
+  $("r-flag").textContent = oc.flagged;
+  $("r-total").textContent = rows.length;
+  $("hero-queue").textContent = `${oc.flagged} / ${rows.length}`;
+  $("hero-coverage").textContent = Math.round(oc.empirical * 100) + "%";
+
+  $("oc").querySelectorAll("tr[data-lvl]").forEach(tr => {
+    const on = tr.dataset.lvl === level;
+    tr.classList.toggle("active", on);
+    tr.querySelector("button").setAttribute("aria-current", on ? "true" : "false");
+  });
+
+  const counts = rows.reduce((a, r) => (a[r.state] = (a[r.state] || 0) + 1, a), {});
+  $("plot-desc").textContent =
+    `${rows.length} sites at ${level}% nominal confidence: ` +
+    `${counts.consistent || 0} consistent, ${counts.outside_envelope || 0} outside the ` +
+    `envelope and queued for re-check, ${counts.insufficient_evidence || 0} with an ` +
+    `envelope too wide to judge. Every site is also listed in the table below the plot, `
+    + `and every queued site appears in the review queue.`;
+
+  const priority = rows.filter(r => r.state === "outside_envelope")
+                       .sort((a, b) => b.distanceOutside - a.distanceOutside);
+  if (!selected && priority.length) selected = priority[0].site;
+
+  drawPlot(rows);
+  drawQueue(rows);
+  renderTable(rows);
+  renderByCity(rows);
+  if (selected) showDetail(rows.find(r => r.site === selected) || null);
+}
+
+function drawPlot(rows) {
+  const W = 720, H = 470, m = { l: 58, r: 18, t: 16, b: 46 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const X = v => m.l + v * iw, Y = v => m.t + (1 - v) * ih;
+
+  // The model is linear, so slope and intercept follow exactly from any two
+  // rows with distinct predictor values. Least squares over all rows is used so
+  // a duplicated predictor value cannot produce a degenerate slope.
+  const pts = rows.map(r => ({ ...r, x: r.others[PRED_KEY], y: r.observed }));
+  const n = pts.length;
+  const mx = pts.reduce((s, p) => s + p.x, 0) / n;
+  const mp = rows.reduce((s, r) => s + r.predicted, 0) / n;
+  let num = 0, den = 0;
+  pts.forEach((p, i) => { num += (p.x - mx) * (rows[i].predicted - mp); den += (p.x - mx) ** 2; });
+  const slope = den > 1e-12 ? num / den : 0;
+  const intercept = mp - slope * mx;
+  const radius = rows[0].width / 2;
+
+  const line = [0, 1].map(x => ({ x, y: intercept + slope * x }));
+  const band =
+    `M ${X(line[0].x)} ${Y(line[0].y + radius)} L ${X(line[1].x)} ${Y(line[1].y + radius)}
+     L ${X(line[1].x)} ${Y(line[1].y - radius)} L ${X(line[0].x)} ${Y(line[0].y - radius)} Z`;
+
+  const ticks = [0, .25, .5, .75, 1];
+  const grid = ticks.map(t => `
+    <line class="grid" x1="${X(0)}" y1="${Y(t)}" x2="${X(1)}" y2="${Y(t)}"/>
+    <line class="grid" x1="${X(t)}" y1="${Y(0)}" x2="${X(t)}" y2="${Y(1)}"/>`).join("");
+  const tickLabels = ticks.map(t => `
+    <text class="axis-label" x="${X(t)}" y="${Y(0)+18}" text-anchor="middle">${t}</text>
+    <text class="axis-label" x="${X(0)-10}" y="${Y(t)+4}" text-anchor="end">${t}</text>`).join("");
+
+  // Left to right along the predictor axis, so arrow keys track the eye.
+  order = pts.slice().sort((a, b) => a.x - b.x || a.site.localeCompare(b.site)).map(p => p.site);
+  const focusSite = selected && order.includes(selected) ? selected : order[0];
+
+  const circles = pts.map(p => {
+    const r = p.state === "outside_envelope" ? 5.5
+            : p.state === "insufficient_evidence" ? 4.6 : 4.2;
+    const label = `${p.site}, ${p.city}. ${STATE_LABEL[p.state]}. Measured ${fmt(p.y)}, `
+                + `envelope ${fmt(p.low)} to ${fmt(p.high)}.`;
+    return `<circle class="pt ${p.state}${p.site === selected ? " sel" : ""}"
+      data-site="${p.site}" cx="${X(p.x)}" cy="${Y(p.y)}" r="${r}"
+      role="button" tabindex="${p.site === focusSite ? 0 : -1}"
+      aria-pressed="${p.site === selected}" aria-label="${label}"><title>${label}</title></circle>`;
+  }).join("");
+
+  $("plot").innerHTML = `
+    <defs><clipPath id="plotArea">
+      <rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}"/>
+    </clipPath></defs>
+    ${grid}
+    <g clip-path="url(#plotArea)">
+      <path class="band" d="${band}"/>
+      <path class="band-edge" d="M ${X(line[0].x)} ${Y(line[0].y+radius)} L ${X(line[1].x)} ${Y(line[1].y+radius)}"/>
+      <path class="band-edge" d="M ${X(line[0].x)} ${Y(line[0].y-radius)} L ${X(line[1].x)} ${Y(line[1].y-radius)}"/>
+      <path class="fit" d="M ${X(line[0].x)} ${Y(line[0].y)} L ${X(line[1].x)} ${Y(line[1].y)}"/>
+    </g>
+    <line class="axis" x1="${X(0)}" y1="${Y(0)}" x2="${X(1)}" y2="${Y(0)}"/>
+    <line class="axis" x1="${X(0)}" y1="${Y(0)}" x2="${X(0)}" y2="${Y(1)}"/>
+    ${tickLabels}
+    ${circles}
+    <text class="axis-label" x="${m.l+iw/2}" y="${H-10}" text-anchor="middle">illustrative ${DATA.meta.predictor}</text>
+    <text class="axis-label" transform="translate(16,${m.t+ih/2}) rotate(-90)" text-anchor="middle">illustrative ${DATA.meta.target}</text>`;
+
+  $("plot").querySelectorAll("circle.pt").forEach(c => {
+    c.addEventListener("click", () => pick(c.dataset.site, rows, false));
+    c.addEventListener("keydown", e => onPlotKey(e, rows));
+  });
+}
+
+function onPlotKey(e, rows) {
+  const here = order.indexOf(e.currentTarget.dataset.site);
+  let next = null;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") next = Math.min(here + 1, order.length - 1);
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = Math.max(here - 1, 0);
+  else if (e.key === "Home") next = 0;
+  else if (e.key === "End") next = order.length - 1;
+  else if (e.key === "f" || e.key === "F") {
+    const flagged = new Set(rows.filter(r => r.state === "outside_envelope").map(r => r.site));
+    for (let i = 1; i <= order.length; i++) {
+      const cand = order[(here + i) % order.length];
+      if (flagged.has(cand)) { next = order.indexOf(cand); break; }
+    }
+    if (next === null) return;
+  } else if (e.key === "Enter" || e.key === " ") { next = here; }
+  else return;
+
+  e.preventDefault();
+  pick(order[next], rows, true);
+}
+
+function pick(site, rows, moveFocus) {
+  selected = site;
+  showDetail(rows.find(r => r.site === selected));
+  drawPlot(rows);
+  syncQueueCurrent();
+  if (moveFocus) {
+    const el = $("plot").querySelector('circle.pt[data-site="' + CSS.escape(site) + '"]');
+    if (el) el.focus();
+  }
+}
+
+function syncQueueCurrent() {
+  $("queue").querySelectorAll("button[data-site]").forEach(b =>
+    b.setAttribute("aria-current", b.dataset.site === selected ? "true" : "false"));
+}
+
+function drawQueue(rows) {
+  const flagged = rows.filter(r => r.state === "outside_envelope")
+                      .sort((a, b) => b.distanceOutside - a.distanceOutside);
+  const reviewed = flagged.filter(r => decisions[r.site]).length;
+  $("qn").textContent = `(${flagged.length})`;
+  $("review-progress").textContent = `${reviewed} of ${flagged.length} priority records have a human disposition`;
+  $("queue").innerHTML = flagged.length
+    ? flagged.map(r => {
+      const decision = decisions[r.site];
+      return `<li><button class="qbtn" data-site="${r.site}"
+        aria-current="${r.site === selected}"
+        aria-label="${r.site}, ${r.city}, ${fmt(r.distanceOutside)} outside its envelope${decision ? ", " + REVIEW_LABEL[decision] : ""}">
+        <span><span class="code">${r.site}</span> <span class="city">${r.city}</span></span>
+        <span><span class="dev">+${fmt(r.distanceOutside)}</span>
+        ${decision ? `<span class="decision">${REVIEW_LABEL[decision]}</span>` : ""}</span></button></li>`;
+    }).join("")
+    : `<li><div class="empty">Nothing queued at this confidence level.</div></li>`;
+  $("queue").querySelectorAll("button[data-site]").forEach(b =>
+    b.addEventListener("click", () => pick(b.dataset.site, rows, false)));
+}
+
+function showDetail(r) {
+  if (!r) { $("detail").innerHTML = '<span class="city">Select a point.</span>'; return; }
+  const others = Object.entries(r.others)
+    .map(([k, v]) => `<div class="row"><span>${k}</span><span>${fmt(v)}</span></div>`).join("");
+  const current = decisions[r.site] || "";
+  const reviewBox = r.state === "outside_envelope" || current ? `
+    <div class="review-box">
+      <strong>Human disposition</strong>
+      <div class="review-actions" role="group" aria-label="Disposition for ${r.site}">
+        <button class="action" type="button" data-review="plausible" aria-pressed="${current === "plausible"}">Accept as plausible variation</button>
+        <button class="action" type="button" data-review="recheck" aria-pressed="${current === "recheck"}">Request field or lab re-check</button>
+        <button class="action" type="button" data-review="context" aria-pressed="${current === "context"}">Escalate as contextual anomaly</button>
+      </div>
+      <div class="review-note">Demo decisions stay in this browser only. They do not alter measurements or retrain the model.</div>
+    </div>` : "";
+  $("detail").innerHTML = `
+    <div class="state ${r.state}">${STATE_LABEL[r.state]}</div>
+    <div style="font:13px var(--mono);margin-bottom:8px">${r.site} &middot; ${r.city}</div>
+    <div class="row"><span>illustrative ${DATA.meta.target}</span><span>${fmt(r.observed)}</span></div>
+    <div class="row"><span>envelope</span><span>[${fmt(r.low)}, ${fmt(r.high)}]</span></div>
+    <div class="row"><span>centre of envelope</span><span>${fmt(r.predicted)}</span></div>
+    ${r.distanceOutside > 0
+      ? `<div class="row"><span>distance outside</span><span>${fmt(r.distanceOutside)}</span></div>` : ""}
+    <div style="border-top:1px solid var(--line);margin:9px 0 6px"></div>
+    ${others}
+    <div class="note" style="margin:10px 0 0;font-size:12.5px">
+      A flag means this reading does not match the co-variation seen across the
+      cohort and is worth re-checking. It is not a finding of contamination, and
+      not a statement about human health.
+    </div>
+    ${reviewBox}`;
+  $("detail").querySelectorAll("button[data-review]").forEach(button =>
+    button.addEventListener("click", () => recordDecision(r.site, button.dataset.review)));
+}
+
+function recordDecision(site, decision) {
+  if (!REVIEW_LABEL[decision]) return;
+  decisions[site] = decision;
+  saveDecisions();
+  const rows = DATA.levels[level];
+  showDetail(rows.find(r => r.site === site));
+  drawQueue(rows);
+}
+</script>
+</body>
+</html>

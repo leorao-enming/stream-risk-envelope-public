@@ -1,0 +1,30 @@
+name: Acceptance
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.17"
+          enable-cache: false
+      - run: uv sync --locked --extra dev --python 3.12
+      - run: uv run --locked playwright install --with-deps chromium
+      - name: Check synthetic fixture and offline demo
+        run: uv run --locked python scripts/acceptance.py
+      - name: Preserve acceptance evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ github.sha }}-${{ github.run_attempt }}
+          path: artifacts/acceptance/
+          if-no-files-found: warn
+          retention-days: 30
