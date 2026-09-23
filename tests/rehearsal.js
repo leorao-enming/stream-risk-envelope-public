@@ -86,7 +86,7 @@ window.__rehearse = function () {
       try {
         localStorage.setItem("sre:rehearsal-probe", "1");
         localStorage.removeItem("sre:rehearsal-probe");
-        stored = JSON.parse(localStorage.getItem("sre:review-decisions:v1") || "{}");
+        stored = JSON.parse(localStorage.getItem("sre:synthetic-review-decisions:v1") || "{}");
       } catch (_) { storageWorks = false; }
       if (storageWorks) ok(stored[site] === "recheck", "human disposition did not persist locally");
     }
