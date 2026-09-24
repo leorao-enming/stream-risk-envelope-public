@@ -14,7 +14,7 @@ The `web/` demo has a different, wholly synthetic fixture: its 60 fictional reco
 
 ## Open the demo
 
-Open `web/index.html` in a browser. It works offline and makes no network requests. The page loads `web/data.js`, a deterministic synthetic fixture. For a fresh regeneration:
+Open the [live synthetic demo](https://leorao-enming.github.io/stream-risk-envelope-public/web/) directly, or open `web/index.html` locally. The page also works offline and makes no data-service requests; it loads `web/data.js`, a deterministic synthetic fixture. For a fresh regeneration:
 
 ```bash
 uv sync --locked --extra dev

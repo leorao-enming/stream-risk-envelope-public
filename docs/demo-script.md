@@ -4,7 +4,7 @@ Target **3:50–4:20**. The hackathon requires one **3–5 minute** video. Recor
 
 ## Prepare the screen
 
-1. Use the public repository's web/index.html. Keep the full-width two-column layout visible. Increase browser zoom only as far as the right-hand site panel remains beside the plot; check readability in a 1080p export.
+1. Open the [live synthetic demo](https://leorao-enming.github.io/stream-risk-envelope-public/web/) or the public repository's web/index.html. Keep the full-width two-column layout visible. Increase browser zoom only as far as the right-hand site panel remains beside the plot; check readability in a 1080p export.
 2. Close notifications, personal tabs and browser chrome that might expose private information. Turn off network access if convenient; the demo does not need it.
 3. Click **Reset demo decisions**, reload, and verify the synthetic banner, default **80%**, **6 / 60** queued and **0 of 6** human dispositions.
 4. Record the screen and narration in segments if necessary. Keep each change on screen for two seconds. Edit the segments into **one** video; the four exploratory recordings are source material, not the submission video.
@@ -46,7 +46,7 @@ The timestamps are targets, not cues to speak faster. Pause briefly after each U
 
 ## Submission actions
 
-1. Use docs/submission-draft.md as the Devpost copy. Add the final public video URL and the public repository URL.
-2. Confirm the repository URL and video both open without signing in. Confirm the repository still contains only the synthetic DEMO-* fixture; keep the private real-data repository private.
+1. Use docs/submission-draft.md as the Devpost copy. Add the final public video URL, the public repository URL, and the live demo URL.
+2. Confirm the live demo, repository and video all open without signing in. Confirm the repository still contains only the synthetic DEMO-* fixture; keep the private real-data repository private.
 3. Submit the project on Devpost rather than leaving a draft. Save the confirmation/receipt and final public links.
 4. Complete this before travel. The official deadline is **30 September 2026, 21:00 PDT** (**1 October 2026, 12:00 Shanghai**), but the planned personal deadline is **25 September 2026**.

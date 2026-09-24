@@ -40,11 +40,11 @@ The real analysis is a single-season retrospective cross-section, not a forecast
 
 - Public code repository: https://github.com/leorao-enming/stream-risk-envelope-public
 - Demo video (3–5 minutes): **ADD FINAL PUBLIC VIDEO URL**
-- Working prototype: open web/index.html from the public repository; it runs offline with the bundled synthetic fixture
+- Working prototype / live synthetic demo: https://leorao-enming.github.io/stream-risk-envelope-public/web/
 
 ## Final checks
 
-- [ ] The video and repository links open without signing in.
+- [ ] The video, repository and live synthetic demo links open without signing in.
 - [ ] The video repeatedly distinguishes the private retrospective evaluation from synthetic screen values.
 - [ ] No actual site-level values, real-data plots, derived snapshots, API responses or private-repository links are included.
 - [ ] The Devpost form is formally submitted and its confirmation saved.
