@@ -18,7 +18,7 @@ We developed the method using OneAquaHealth Resilience Map data in a private rep
 
 ## What the prototype does
 
-A standardised ridge model predicts one indicator from the other. Split conformal calibration forms an interval using a separate calibration split. A reading outside its interval enters a ranked human review queue. The reviewer sees the observed value, expected envelope and distance outside it, then can accept plausible variation, request a field or lab re-check, or escalate context. A control shows how nominal level changes interval width and review workload. Records with an interval too wide to judge appear in a separate further-assessment queue; they are not automatically cleared. The reviewer must provide a reason and explicitly save. Each saved decision captures its operating point and synthetic evidence, and can be exported in a CSV handoff. Decisions persist locally unless exported; no request is sent to a field or laboratory team.
+A standardised ridge model predicts one indicator from the other. Split conformal calibration forms an interval using a separate calibration split. A reading outside its interval enters a ranked human review queue. The reviewer sees the observed value, expected envelope and distance outside it, then can accept plausible variation, suggest a field or lab re-check, or escalate context. A control shows how nominal level changes interval width and review workload. Records with an interval too wide to judge appear in a separate further-assessment queue; they are not automatically cleared. The reviewer must provide a reason and explicitly save. Each saved decision captures its operating point and synthetic evidence, and can be exported in a CSV handoff. Decisions persist locally unless exported; no request is sent to a field or laboratory team.
 
 ## Evidence from the private retrospective analysis
 
@@ -48,3 +48,7 @@ The real analysis is a single-season retrospective cross-section, not a forecast
 - [ ] The video repeatedly distinguishes the private retrospective evaluation from synthetic screen values.
 - [ ] No actual site-level values, real-data plots, derived snapshots, API responses or private-repository links are included.
 - [ ] The Devpost form is formally submitted and its confirmation saved.
+
+## Preliminary usability feedback
+
+One feedback report relayed by the project author highlighted that an empty exception queue could overshadow unassessable records, coverage percentages could be mistaken for accuracy, and request wording could imply delivery. We responded by showing all three outcome counts together at the top and beside the queue, explaining target coverage next to the control, moving observed coverage into method details, and labelling follow-ups as local recommendations. The handoff explicitly does not manage recipients, deadlines, delivery or re-test results. These changes have not yet been retested with that participant; no task-success rate, time saving or field effectiveness is claimed.

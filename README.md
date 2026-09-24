@@ -61,7 +61,7 @@ Data-source acknowledgement: OneAquaHealth is a Horizon Europe project under gra
 
 ## Review handoff
 
-At 90%, this synthetic fixture has **0 outside-envelope records, 48 unassessable records and 12 within-envelope records**. An empty exception queue does not clear the dataset. Use **Needs further assessment** to request additional information, request a re-check, or defer pending evidence.
+At 90%, this synthetic fixture has **0 outside-envelope records, 48 unassessable records and 12 within-envelope records**. An empty exception queue does not clear the dataset. Use **Needs further assessment** to request additional information, suggest a re-check, or defer pending evidence.
 
 Choose an action, enter **Reason and next step**, then click **Save decision**. **Export saved decisions (CSV)** exports all saved records across operating points, including the fixture version, synthetic label, site, city, nominal level, model state, observation, predictor, interval, distance, action, reason and local-device timestamp. Only saved text is exported. Decisions are keyed by fixture, operating point and site, so changing the slider does not overwrite previous evidence. Saving again at the same site and operating point replaces that entry; this is an editable handoff, not an audit log. Free-text spreadsheet formulas are neutralised in CSV exports.
 

@@ -223,9 +223,9 @@
   </div>
   <div class="synthetic-banner">Synthetic demonstration: every site, indicator value and result below is invented. No OneAquaHealth measurements are included.</div>
   <div class="hero-proof" aria-label="Illustrative synthetic demo results">
-    <div class="proof"><b id="hero-queue">—</b><span>fictional records queued at this operating point</span></div>
-    <div class="proof"><b id="hero-coverage">—</b><span>held-out coverage on synthetic observations</span></div>
-    <div class="proof"><b id="hero-cities">—</b><span>fictional demo cities used for held-out folds</span></div>
+    <div class="proof"><b id="hero-queue">—</b><span>outside envelope — suggested review</span></div>
+    <div class="proof"><b id="hero-abstain">—</b><span>not assessable — follow-up needed</span></div>
+    <div class="proof"><b id="hero-within">—</b><span>within envelope — not verified correct or safe</span></div>
   </div>
   <a class="hero-link" href="#detail-heading">Review the selected site &darr;</a>
 </header>
@@ -242,20 +242,20 @@
     <p class="scope"><strong>Evidence boundary:</strong> this page illustrates the review workflow with invented values. It does not report validation on OneAquaHealth measurements.</p>
 
     <div class="control">
-      <label for="lvl">Confidence level &mdash; you choose the operating point</label>
+      <label for="lvl">Target interval coverage — controls envelope width</label>
       <input type="range" id="lvl" min="0" max="4" step="1" value="3"
-             aria-describedby="readout" aria-valuetext="80 percent nominal confidence">
+             aria-describedby="coverage-help readout" aria-valuetext="80 percent target interval coverage">
       <div class="ticks" aria-hidden="true">
         <span>50%</span><span>60%</span><span>70%</span><span>80%</span><span>90%</span>
       </div>
       <div class="readout" id="readout" role="status" aria-live="polite" aria-atomic="true">
-        <span>nominal <b id="r-nom">80%</b></span>
-        <span>synthetic coverage <b id="r-emp">—</b></span>
+        <span>target interval coverage <b id="r-nom">80%</b></span>
         <span>envelope width <b id="r-wid">—</b></span>
         <span>queued for review <b id="r-flag">—</b> / <b id="r-total">—</b></span>
       </div>
     </div>
 
+    <p id="coverage-help" class="note">This percentage sets the target share of observations inside an interval. It is not prediction accuracy, a probability that a record is correct, or a water-safety score. Wider intervals can leave more records unassessable.</p>
     <div id="assessment-summary" class="assessment-summary" role="status" aria-live="polite"></div>
     <svg id="plot" viewBox="0 0 720 470" role="group"
          aria-labelledby="plot-title" aria-describedby="plot-desc"></svg>
@@ -288,10 +288,10 @@
       <summary>Inspect synthetic results, method and limitations</summary>
       <h2>How the example works</h2>
       <div class="note">The five fictional city groups are held out one at a time. A ridge model predicts one invented indicator from another; a separate calibration split sets the conformal envelope. A reading outside that envelope enters the human review queue. All figures below are calculated from the synthetic fixture.</div>
-      <h2>Illustrative operating characteristics</h2>
+      <h2>Illustrative operating characteristics</h2><p class="note">Observed synthetic coverage is the fraction of invented observations inside their intervals, including intervals too wide to assess. It is not accuracy or a safety guarantee. Current observed coverage: <b id="r-emp">—</b>.</p>
       <table id="oc">
         <caption class="vh">Synthetic coverage and review workload at each confidence level</caption>
-        <thead><tr><th scope="col">nominal</th><th scope="col">synthetic</th>
+        <thead><tr><th scope="col">target coverage</th><th scope="col">observed synthetic coverage</th>
           <th scope="col">width</th><th scope="col">of range</th><th scope="col">queued</th></tr></thead>
         <tbody></tbody>
       </table>
@@ -317,6 +317,8 @@
       <h2 id="queue-heading">Review queue <span id="qn" style="color:var(--muted)"></span></h2>
       <button class="reset" id="reset-decisions" type="button">Reset demo decisions</button>
     </div>
+    <div id="queue-summary" class="assessment-summary" role="status" aria-live="polite"></div>
+    <a id="abstain-link" href="#abstain-heading">Open records needing further assessment &darr;</a>
     <div class="progress" id="review-progress" role="status" aria-live="polite"></div>
     <a class="queue-review-link" id="queue-review-link" href="#detail-heading">Open decision controls for the selected site &uarr;</a>
     <ul class="queue" id="queue" aria-labelledby="queue-heading"></ul>
@@ -328,7 +330,7 @@
     <h2>Review handoff</h2>
     <button class="action" id="export-decisions" type="button" disabled>Export saved decisions (CSV)</button>
     <div id="export-status" class="review-note" role="status" aria-live="polite"></div>
-    <div class="review-note">Exports contain saved decisions at their original operating points, including reasons and synthetic evidence. This editable handoff is not an authenticated audit trail. Saving or exporting does not send a re-check request to anyone.</div>
+    <div class="review-note">Exports contain saved decisions at their original operating points, including reasons and synthetic evidence. This editable handoff does not assign an owner or recipient, track deadlines or delivery, or collect re-test results. It is not an authenticated audit trail. Saving or exporting does not send a re-check request to anyone.</div>
 
     <h2>Where the queue comes from</h2>
     <div id="bycity"></div>
@@ -350,8 +352,8 @@ const STATE_LABEL = {
 const REVIEW_KEY = "sre:synthetic-review-decisions:v2";
 const REVIEW_LABEL = {
   plausible: "accepted as plausible",
-  recheck: "field re-check requested",
-  context: "context escalation requested",
+  recheck: "field or lab re-check suggested",
+  context: "context escalation suggested",
   information: "additional information needed",
   defer: "deferred pending evidence",
 };
@@ -399,7 +401,7 @@ function boot() {
 
   $("lvl").addEventListener("input", e => {
     level = LEVELS[+e.target.value];
-    e.target.setAttribute("aria-valuetext", level + " percent nominal confidence");
+    e.target.setAttribute("aria-valuetext", level + " percent target interval coverage");
     render();
   });
   $("reset-decisions").addEventListener("click", () => {
@@ -413,7 +415,7 @@ function boot() {
   $("lims").innerHTML = DATA.limitations.map(t => `<div class="note">${t}</div>`).join("");
 
   $("foot").textContent = `${DATA.meta.sites} invented sites across ${DATA.meta.cities.length} fictional cities. ${DATA.meta.source}. Fixture ${DATA.meta.fixtureVersion}.`;
-  $("hero-cities").textContent = DATA.meta.cities.length;
+
 
   renderOC();
   render();
@@ -488,7 +490,7 @@ function renderOC() {
     if (!LEVELS.includes(l)) return;
     level = l;
     $("lvl").value = LEVELS.indexOf(l);
-    $("lvl").setAttribute("aria-valuetext", l + " percent nominal confidence");
+    $("lvl").setAttribute("aria-valuetext", l + " percent target interval coverage");
     render();
   }));
 }
@@ -503,7 +505,7 @@ function render() {
   $("r-flag").textContent = oc.flagged;
   $("r-total").textContent = rows.length;
   $("hero-queue").textContent = `${oc.flagged} / ${rows.length}`;
-  $("hero-coverage").textContent = Math.round(oc.empirical * 100) + "%";
+
 
   $("oc").querySelectorAll("tr[data-lvl]").forEach(tr => {
     const on = tr.dataset.lvl === level;
@@ -512,9 +514,13 @@ function render() {
   });
 
   const counts = rows.reduce((a, r) => (a[r.state] = (a[r.state] || 0) + 1, a), {});
+  $("hero-abstain").textContent = counts.insufficient_evidence || 0;
+  $("hero-within").textContent = counts.consistent || 0;
   $("assessment-summary").textContent = `${counts.outside_envelope || 0} records outside the envelope · ${counts.insufficient_evidence || 0} records not assessable at this setting · ${counts.consistent || 0} within the envelope. Within the envelope does not mean verified correct or safe.`;
+  $("queue-summary").textContent = $("assessment-summary").textContent;
+  $("abstain-link").hidden = !counts.insufficient_evidence;
   $("plot-desc").textContent =
-    `${rows.length} sites at ${level}% nominal confidence: ` +
+    `${rows.length} sites at ${level}% target interval coverage: ` +
     `${counts.consistent || 0} consistent, ${counts.outside_envelope || 0} outside the ` +
     `envelope and queued for re-check, ${counts.insufficient_evidence || 0} with an ` +
     `envelope too wide to judge. Every site is also listed in the table below the plot, `
@@ -674,11 +680,11 @@ function showDetail(r) {
   const key = decisionKey(r.site), saved = savedDecision(r.site);
   const draft = drafts[key] ||= {decision: saved?.decision || '', reason: saved?.reason || ''};
   const options = r.state === 'insufficient_evidence'
-    ? [['information', 'Request additional information'], ['recheck', 'Request field or lab re-check'], ['defer', 'Defer pending evidence']]
-    : [['plausible', 'Accept as plausible variation'], ['recheck', 'Request field or lab re-check'], ['context', 'Escalate as contextual anomaly']];
+    ? [['information', 'Suggest gathering more information'], ['recheck', 'Suggest field or lab re-check'], ['defer', 'Defer pending evidence']]
+    : [['plausible', 'Accept as plausible variation'], ['recheck', 'Suggest field or lab re-check'], ['context', 'Suggest context review']];
   const reviewBox = r.state !== 'consistent' || saved ? `
     <div class="review-box">
-      <strong>Human disposition</strong>
+      <strong>Human recommendation — saved locally, not sent</strong>
       <div class="review-actions" role="group" aria-label="Disposition for ${r.site}">
         ${options.map(([value, label]) => `<button class="action" type="button" data-review="${value}" aria-pressed="${draft.decision === value}">${label}</button>`).join('')}
       </div>
@@ -732,7 +738,7 @@ function recordDecision(r, draft) {
 
 function decisionCSV() {
   const fields = ['synthetic', 'fixtureVersion', 'site', 'city', 'nominalLevel', 'state',
-    'observed', 'predictor', 'low', 'high', 'distanceOutside', 'decision', 'reason', 'savedAt'];
+    'observed', 'predictor', 'low', 'high', 'distanceOutside', 'decision', 'recommendation', 'deliveryStatus', 'reason', 'savedAt'];
   const cell = value => {
     let text = String(value ?? '');
     // Neutralise spreadsheet formulas in free text, including leading whitespace.
@@ -740,7 +746,7 @@ function decisionCSV() {
     return '"' + text.replace(/"/g, '""') + '"';
   };
   const records = Object.values(decisions).sort((a, b) => a.site.localeCompare(b.site) || a.nominalLevel - b.nominalLevel);
-  return [fields, ...records.map(r => fields.map(f => r[f]))].map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
+  return [fields, ...records.map(r => fields.map(f => f === 'recommendation' ? REVIEW_LABEL[r.decision] : f === 'deliveryStatus' ? 'not sent — local recommendation only' : r[f]))].map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }
 
 function exportDecisions() {

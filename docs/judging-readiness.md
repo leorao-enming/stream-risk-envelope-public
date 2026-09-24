@@ -13,7 +13,7 @@ The public demo is synthetic. Its technical contribution is the inspectable work
 - [ ] Add the public repository and video links to the submission.
 - [ ] Submit before the official deadline and verify the final public links.
 
-Remaining product limits: no external user study, screen-reader session, real-world impact measure, authenticated reviewer identity, or audit history.
+Remaining product limits: one preliminary feedback report received (post-change participant retest pending); no formal user study, screen-reader session, real-world impact measure, authenticated reviewer identity, or audit history.
 
 ## Final review-workflow additions
 

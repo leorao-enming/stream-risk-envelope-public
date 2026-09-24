@@ -84,7 +84,7 @@ window.__rehearse = function () {
       ok(g("review-progress").textContent.startsWith(`1 of ${defaultQueue}`),
          "review progress did not update after a disposition");
       const reviewedItem = document.querySelector(`#queue button[data-site="${CSS.escape(site)}"] .decision`);
-      ok(reviewedItem && reviewedItem.textContent.includes("re-check requested"),
+      ok(reviewedItem && reviewedItem.textContent.includes("re-check suggested"),
          "queue did not show the human disposition");
       let storageWorks = true, stored = {};
       try {
@@ -104,6 +104,8 @@ window.__rehearse = function () {
   setLevel("4");
   ok(all('#abstain-queue button[data-site]').length === 48, '90% must expose all 48 abstentions');
   ok(g('assessment-summary').textContent.includes('48 records not assessable'), 'abstention summary missing');
+  ok(g('hero-abstain').textContent === '48' && g('queue-summary').textContent.includes('48 records not assessable'), '48 abstentions must be visible beside the empty queue and in the hero');
+  ok(g('coverage-help').textContent.includes('not prediction accuracy'), 'coverage explanation missing');
   ok(g('abstain-progress').textContent.startsWith('0 of 48'), '80% decisions carried over to 90%');
   document.querySelector('#abstain-queue button[data-site]').click();
   ok(!document.querySelector('#detail button[data-review="plausible"]'), 'abstention must not offer model-based clearance');
@@ -148,7 +150,8 @@ window.__rehearse = function () {
   ok(!!document.querySelector("details.alt > summary"), "table alternative is not disclosable");
   ok(g("detail").getAttribute("aria-live") === "polite", "detail panel is not announced");
   ok(g("hero-queue").textContent === `${defaultQueue} / ${n}`, "hero workload evidence is out of sync");
-  ok(g("hero-coverage").textContent === `${Math.round(window.__DATA.operatingCurve.find(r => Math.round(r.nominal * 100) === 80).empirical * 100)}%`, "hero coverage evidence is out of sync");
+  ok(g("hero-abstain").textContent === '0', "hero abstention count out of sync");
+  ok(g("hero-within").textContent === '54', "hero within-envelope count out of sync");
 
   // leave the page on the default operating point, ready to present
   g("reset-decisions").click();

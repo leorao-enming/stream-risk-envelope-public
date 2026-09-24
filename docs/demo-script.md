@@ -8,7 +8,7 @@ Target **4:10–4:40**, with a hard final length of **3–5 minutes**. Record th
 2. Keep the plot and selected-site panel legible. Close personal tabs and notifications. Rehearse once before recording.
 3. Have these two reasons ready to paste:
    - At 90%: `Need repeated observations before assessing this record.`
-   - At 80%: `Check the lab entry and request a duplicate sample.`
+   - At 80%: `Check the lab entry and suggest a duplicate sample.`
 4. If showing the downloaded CSV, open only that synthetic file and hide other files. It is also sufficient to show the successful download and explain its contents. Do not display the private repository, source records, actual-data plots, API responses or correspondence.
 
 ## 0:00–0:35 — Start with the user problem; show the synthetic banner
@@ -21,13 +21,13 @@ Target **4:10–4:40**, with a hard final length of **3–5 minutes**. Record th
 
 ## 1:10–2:00 — Move 80% → 50% → 90%; show the summary and Needs further assessment queue
 
-> Changing the operating point changes the workload. At 50 percent, twenty-eight records enter the review queue. At 90 percent, no records are outside the envelope, but forty-eight cannot be assessed because their intervals are too wide. An empty exception queue therefore does not clear the dataset. These records appear separately under “Needs further assessment,” where a person can request information, request a re-check, or defer with a reason.
+> Changing the operating point changes the workload. At 50 percent, twenty-eight records enter the review queue. At 90 percent, no records are outside the envelope, but forty-eight cannot be assessed because their intervals are too wide. An empty exception queue therefore does not clear the dataset. These records appear separately under “Needs further assessment,” where a person can request information, suggest a re-check, or defer with a reason.
 
 ## 2:00–2:50 — Save one follow-up at 90%, then one re-check at 80%
 
-At 90%, select the first **Needs further assessment** record → **Defer pending evidence** → paste reason 1 → **Save decision**. Return to 80%, select **DEMO-D03** → **Request field or lab re-check** → paste reason 2 → **Save decision**. Show **1 of 6**.
+At 90%, select the first **Needs further assessment** record → **Defer pending evidence** → paste reason 1 → **Save decision**. Return to 80%, select **DEMO-D03** → **Suggest field or lab re-check** → paste reason 2 → **Save decision**. Show **1 of 6**.
 
-> I will defer this unassessable record until repeated observations are available. I choose an action, explain why, and save. Now I return to 80 percent and open DEMO-D03. Its illustrative value is 0.633, above the interval's upper end of 0.553. I record a lab-entry check and request a duplicate sample. The saved decision includes the operating point and evidence visible when I made it.
+> I will defer this unassessable record until repeated observations are available. I choose an action, explain why, and save. Now I return to 80 percent and open DEMO-D03. Its illustrative value is 0.633, above the interval's upper end of 0.553. I record a lab-entry check and suggest a duplicate sample. The saved decision includes the operating point and evidence visible when I made it.
 
 ## 2:50–3:35 — Click Export saved decisions (CSV); show the handoff
 
