@@ -7,6 +7,6 @@ Source: one feedback report supplied by the project author in conversation on 24
 - Request wording could suggest a message was sent: change actions and saved labels to suggestions; identify them as local, unsent recommendations. Export a human-readable recommendation and explicit not-sent status alongside the stable decision code.
 - Handoff supports understanding but not execution management: state that owner, recipient, deadline, delivery tracking, re-test results and authenticated audit history are absent. Do not imply those features exist.
 
-Status: implementation complete; automated regression and deployment verification required. Participant retest is pending. Do not claim improved comprehension or successful task completion until retested.
+Verification: consult the Acceptance run and Pages deployment for the published commit. Participant retest is pending. Do not claim improved comprehension or successful task completion until retested.
 
 Suggested retest: without prompting, ask the participant what the three counts at 90% mean, what each percentage measures, whether a saved suggestion has been sent, and what work remains after exporting the handoff. Record their actual answers and any help provided.

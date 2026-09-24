@@ -94,6 +94,8 @@ def browser_check(label):
                                 failures.append('CSV reason escaping or original record changed')
                             if original['state'] != 'outside_envelope' or deferred['state'] != 'insufficient_evidence':
                                 failures.append('saved evidence was recomputed at the export operating point')
+                            if not all(r['deliveryStatus'] == 'not sent — local recommendation only' and r['recommendation'] for r in records):
+                                failures.append('CSV must label recommendations as not sent')
                             if deferred['reason'] != 'Need repeated observations.' or not all(r['synthetic'] == 'true' for r in records):
                                 failures.append('export included unsaved draft or omitted synthetic labels')
                             page.locator('#reset-decisions').click()
