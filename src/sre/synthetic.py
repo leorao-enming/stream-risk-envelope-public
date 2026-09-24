@@ -66,7 +66,7 @@ def build() -> dict:
             "Every observation and result on this page is synthetic. Values, city names, flags and coverage rates are illustrations, not OneAquaHealth findings.",
             "A flag prioritises a human re-check; it does not establish measurement error, contamination or human health risk.",
             "The demonstration uses one invented observation per site. It does not support a forecast or causal conclusion.",
-            "Conformal coverage is marginal across the generated cohort; it does not guarantee coverage within each city.",
+            "Standard conformal coverage requires exchangeable calibration and test records. Cross-city shift can violate this assumption; observed coverage here is descriptive, not a guarantee for a new city.",
             "A real deployment would need permissioned data access, local validation, governance and an accountable review process.",
         ],
         "operatingCurve": model.operating_curve(

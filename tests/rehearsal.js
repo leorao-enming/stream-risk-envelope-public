@@ -77,6 +77,10 @@ window.__rehearse = function () {
     ok(!!review, "human disposition actions missing");
     if (review) {
       review.click();
+      ok(g("save-decision").disabled, "empty reason must prevent saving");
+      g("review-reason").value = 'Check lab entry, then request a duplicate sample.';
+      g("review-reason").dispatchEvent(new Event('input', {bubbles:true}));
+      g("save-decision").click();
       ok(g("review-progress").textContent.startsWith(`1 of ${defaultQueue}`),
          "review progress did not update after a disposition");
       const reviewedItem = document.querySelector(`#queue button[data-site="${CSS.escape(site)}"] .decision`);
@@ -86,11 +90,31 @@ window.__rehearse = function () {
       try {
         localStorage.setItem("sre:rehearsal-probe", "1");
         localStorage.removeItem("sre:rehearsal-probe");
-        stored = JSON.parse(localStorage.getItem("sre:synthetic-review-decisions:v1") || "{}");
+        stored = JSON.parse(localStorage.getItem("sre:synthetic-review-decisions:v2") || "{}");
       } catch (_) { storageWorks = false; }
-      if (storageWorks) ok(stored[site] === "recheck", "human disposition did not persist locally");
+      if (storageWorks) {
+        const record = stored[`${window.__DATA.meta.fixtureVersion}:80:${site}`];
+        ok(record?.decision === "recheck" && record?.reason.includes('duplicate sample') && record?.nominalLevel === 80,
+          "decision, reason and operating point did not persist locally");
+      }
     }
   }
+
+  // Separate abstention workflow and no carry-over of a decision to another level.
+  setLevel("4");
+  ok(all('#abstain-queue button[data-site]').length === 48, '90% must expose all 48 abstentions');
+  ok(g('assessment-summary').textContent.includes('48 records not assessable'), 'abstention summary missing');
+  ok(g('abstain-progress').textContent.startsWith('0 of 48'), '80% decisions carried over to 90%');
+  document.querySelector('#abstain-queue button[data-site]').click();
+  ok(!document.querySelector('#detail button[data-review="plausible"]'), 'abstention must not offer model-based clearance');
+  document.querySelector('#detail button[data-review="defer"]').click();
+  g('review-reason').value = 'Await context before assessing this record.';
+  g('review-reason').dispatchEvent(new Event('input', {bubbles:true}));
+  g('save-decision').click();
+  ok(g('abstain-progress').textContent.startsWith('1 of 48'), 'abstention follow-up not saved');
+  ok(!g('export-decisions').disabled, 'saved follow-ups must be exportable');
+  setLevel('3');
+  ok(g('review-progress').textContent.startsWith(`1 of ${defaultQueue}`), '80% decision lost after changing level');
 
   // 4. the keyboard path: one tab stop, arrows move, f jumps to the next flagged site
   const stops = all("circle.pt").filter(c => c.getAttribute("tabindex") === "0");

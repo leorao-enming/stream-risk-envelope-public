@@ -6,6 +6,7 @@ python scripts/acceptance.py --demo-only  # offline shipped demo only
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import importlib.metadata
 import json
@@ -60,6 +61,47 @@ def browser_check(label):
                             el.value = "4"; el.dispatchEvent(new Event("input", {bubbles:true})); }""")
                         if page.locator("circle.pt.insufficient_evidence").count() == 0:
                             failures.append("90% operating point did not demonstrate abstention")
+                        # Verify a real downloaded handoff, persisted snapshots and free-text safety.
+                        try:
+                            page.locator('#lvl').evaluate("el => { el.value = '3'; el.dispatchEvent(new Event('input', {bubbles:true})); }")
+                            page.locator('#queue button[data-site]').first.click()
+                            site = page.locator('#queue button[aria-current="true"]').get_attribute('data-site')
+                            page.locator('[data-review="recheck"]').click()
+                            reason = '=HYPERLINK("example")\nReview <script>unsafe</script>, "quoted"'
+                            page.locator('#review-reason').fill(reason)
+                            page.locator('#save-decision').click()
+                            page.reload()
+                            if page.locator('#review-reason').input_value() != reason:
+                                failures.append('saved reason did not survive reload as literal text')
+                            page.locator('#lvl').evaluate("el => { el.value = '4'; el.dispatchEvent(new Event('input', {bubbles:true})); }")
+                            page.locator('#abstain-queue button[data-site]').first.click()
+                            page.locator('[data-review="defer"]').click()
+                            page.locator('#review-reason').fill('Need repeated observations.')
+                            page.locator('#save-decision').click()
+                            page.locator('#review-reason').fill('Unsaved draft must not be exported.')
+                            with page.expect_download() as info:
+                                page.locator('#export-decisions').click()
+                            download = info.value
+                            export_path = OUT / f'handoff-{label}-{number}.csv'
+                            download.save_as(export_path)
+                            with export_path.open(encoding='utf-8-sig', newline='') as handle:
+                                records = list(csv.DictReader(handle))
+                            if len(records) != 2:
+                                failures.append('export must include exactly two saved records across levels')
+                            original = next(r for r in records if r['nominalLevel'] == '80')
+                            deferred = next(r for r in records if r['nominalLevel'] == '90')
+                            if original['site'] != site or original['reason'] != "'" + reason:
+                                failures.append('CSV reason escaping or original record changed')
+                            if original['state'] != 'outside_envelope' or deferred['state'] != 'insufficient_evidence':
+                                failures.append('saved evidence was recomputed at the export operating point')
+                            if deferred['reason'] != 'Need repeated observations.' or not all(r['synthetic'] == 'true' for r in records):
+                                failures.append('export included unsaved draft or omitted synthetic labels')
+                            page.locator('#reset-decisions').click()
+                            page.reload()
+                            if not page.locator('#export-decisions').is_disabled():
+                                failures.append('reset decisions did not persist')
+                        except Exception as exc:
+                            failures.append(f'handoff interaction failed: {exc}')
                         report["runs"].append({"run": number, "failures": failures,
                                                "page_errors": errors, "network_requests": network})
         report["passed"] = len(report["runs"]) == 3 and all(

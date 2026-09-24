@@ -1,52 +1,46 @@
-# Final demo video: script and recording actions
+# Final demo video: narration and exact recording actions
 
-Target **3:50–4:20**. The hackathon requires one **3–5 minute** video. Record only the synthetic public demo in web/index.html; never show the private repository, actual site-level values, the real-data plot, API responses, or the organiser's email. The private evaluation figures below are aggregate retrospective results, clearly separated from the invented figures on screen.
+Target **4:10–4:40**, with a hard final length of **3–5 minutes**. Record the [live synthetic demo](https://leorao-enming.github.io/stream-risk-envelope-public/web/) or local web/index.html. Show only synthetic interface records and the synthetic CSV. Private evaluation numbers below are spoken aggregate retrospective results; they are not the numbers plotted on screen.
 
-## Prepare the screen
+## Prepare
 
-1. Open the [live synthetic demo](https://leorao-enming.github.io/stream-risk-envelope-public/web/) or the public repository's web/index.html. Keep the full-width two-column layout visible. Increase browser zoom only as far as the right-hand site panel remains beside the plot; check readability in a 1080p export.
-2. Close notifications, personal tabs and browser chrome that might expose private information. Turn off network access if convenient; the demo does not need it.
-3. Click **Reset demo decisions**, reload, and verify the synthetic banner, default **80%**, **6 / 60** queued and **0 of 6** human dispositions.
-4. Record the screen and narration in segments if necessary. Keep each change on screen for two seconds. Edit the segments into **one** video; the four exploratory recordings are source material, not the submission video.
+1. Reset demo decisions and reload. Confirm **80%**, **6 / 60**, and **0 of 6** saved dispositions. The new form needs an action, a reason, and **Save decision**; choosing an action alone does not save.
+2. Keep the plot and selected-site panel legible. Close personal tabs and notifications. Rehearse once before recording.
+3. Have these two reasons ready to paste:
+   - At 90%: `Need repeated observations before assessing this record.`
+   - At 80%: `Check the lab entry and request a duplicate sample.`
+4. If showing the downloaded CSV, open only that synthetic file and hide other files. It is also sufficient to show the successful download and explain its contents. Do not display the private repository, source records, actual-data plots, API responses or correspondence.
 
-## Shot list and exact English narration
+## 0:00–0:35 — Start with the user problem; show the synthetic banner
 
-The timestamps are targets, not cues to speak faster. Pause briefly after each UI change. If the final cut exceeds five minutes, shorten the first and last segments before cutting the interaction.
+> A stream-monitoring coordinator has limited time to re-check records. Stream Risk Envelope helps decide what deserves a second look, explains when the model cannot judge, and records the human next step. We developed and retrospectively evaluated the method using actual OneAquaHealth data in a private repository. Following project guidance, every record and chart in this public demonstration is independently generated synthetic data.
 
-### 0:00–0:32 — Open at the top; keep the synthetic banner in view
+## 0:35–1:10 — Show the default 80% plot and six-record queue
 
-> Stream Risk Envelope is a Track 3 review aid for stream-monitoring coordinators. We developed and retrospectively evaluated the method using OneAquaHealth Resilience Map data in a private repository. Following written guidance from a project representative, every site and result shown in this public interface is independently generated. No actual OneAquaHealth measurements appear in this demo.
+> This is a Track 3 assessment aid. A ridge model predicts one indicator from another, and separate calibration records set its conformal interval. At this synthetic 80-percent setting, six of sixty records sit outside their envelopes. The reviewer can inspect each observation and interval. Our initial landscape model failed to beat a mean baseline, which led us to this narrower consistency-checking task.
 
-### 0:32–1:02 — Point to the four-step workflow, then scroll to the plot
+## 1:10–2:00 — Move 80% → 50% → 90%; show the summary and Needs further assessment queue
 
-> Review time is limited, so the question is which record deserves another look. Our initial landscape-based model failed to beat a simple mean baseline on held-out cities. We kept that negative result and changed the task: check whether two indicators within a stream-monitoring record are consistent with the co-variation observed across a cohort. This is a consistency check, not a water-safety judgment.
+> Changing the operating point changes the workload. At 50 percent, twenty-eight records enter the review queue. At 90 percent, no records are outside the envelope, but forty-eight cannot be assessed because their intervals are too wide. An empty exception queue therefore does not clear the dataset. These records appear separately under “Needs further assessment,” where a person can request information, request a re-check, or defer with a reason.
 
-### 1:02–1:43 — Show the default plot, envelope, six-item queue and selected-site panel
+## 2:00–2:50 — Save one follow-up at 90%, then one re-check at 80%
 
-> Here is the synthetic example. A ridge model predicts one illustrative indicator from another. A separate calibration split sets this conformal envelope. At the default nominal 80-percent operating point, six of sixty fictional records enter the review queue. The orange points are outside the envelope. A reviewer can inspect each observed value, its interval and its distance outside. None of these plotted values is an actual measurement.
+At 90%, select the first **Needs further assessment** record → **Defer pending evidence** → paste reason 1 → **Save decision**. Return to 80%, select **DEMO-D03** → **Request field or lab re-check** → paste reason 2 → **Save decision**. Show **1 of 6**.
 
-### 1:43–2:26 — Move the slider 80% → 50% → 90% → 80%; pause at 90%
+> I will defer this unassessable record until repeated observations are available. I choose an action, explain why, and save. Now I return to 80 percent and open DEMO-D03. Its illustrative value is 0.633, above the interval's upper end of 0.553. I record a lab-entry check and request a duplicate sample. The saved decision includes the operating point and evidence visible when I made it.
 
-> The reviewer chooses the operating point. A narrower envelope sends more records for review. A wider one can reduce the queue, but may become too broad to judge some records. The chart, interval width and workload change together. These on-screen counts are synthetic. Separately, in our private retrospective evaluation, the 80-percent setting covered 82 percent of 96 actual records and queued 17, with each of five cities held out in turn. Those summary results do not show that any flagged record was erroneous.
+## 2:50–3:35 — Click Export saved decisions (CSV); show the handoff
 
-### 2:26–3:10 — Open DEMO-D03; show its interval; click Request field or lab re-check
+> These two decisions can be exported as a review handoff. Each row includes the fictional site, saved operating point, interval, decision, reason and timestamp, with an explicit synthetic label. Changing the slider does not rewrite the saved evidence. Selecting a follow-up does not contact a field or laboratory team: the coordinator must arrange it. This prototype stores editable decisions locally; it does not provide authenticated reviewer identity or an audit history.
 
-> I'll open this fictional record. Its illustrative faecal value is 0.633, while its envelope ends at 0.553, so it sits 0.081 outside. I choose “Request field or lab re-check.” The disposition appears in the queue and stays in this browser. It does not change the measurement, retrain the model or declare contamination. The model proposes a priority; a person decides what happens next.
+## 3:35–4:25 — Expand Inspect synthetic results, method and limitations; close on pilot needs
 
-### 3:10–4:00 — Open Inspect synthetic results, method and limitations; show the operating table and limits
+> Separately, our private retrospective evaluation held out each of five cities in turn. At the nominal 80-percent setting, intervals covered 82 percent of 96 actual records and queued 17. Coverage is not error-detection accuracy. Standard conformal guarantees require comparable calibration and test data; city differences can break that assumption. A pilot must test whether this queue improves re-check yield and reviewer effort. Today, the prototype demonstrates transparent triage, explicit uncertainty and a handoff a person can use.
 
-> The method fits on other cities and uses a separate calibration split to set each envelope. The private real-data analysis was a single-season retrospective cross-section. It does not establish that flagged records are wrong, that review time is saved, or that health outcomes improve. This proof of concept also lacks reviewer authentication and an audit trail. A real pilot would need permissioned data access, repeated local observations, city-specific calibration and an accountable review team. Stream Risk Envelope makes the uncertainty and workload visible before anyone acts.
+## Edit, caption and submit
 
-## Edit and export
-
-- Keep one continuous story with no repeated scrolling. Show a cursor only when it identifies a value or control.
-- Add accurate English captions, especially for **private real-data evaluation** versus **synthetic public demonstration**. Never caption the on-screen **6 / 60** as a real-data result.
-- Export one video between 3:00 and 5:00. Watch the exported file from beginning to end at normal speed and at a smaller player size. Confirm that narration, labels, synthetic disclaimer and decision result are readable.
-- Do not call a queued point polluted, unsafe, wrong, a measured OneAquaHealth site, or a proven environmental or human-health risk.
-
-## Submission actions
-
-1. Use docs/submission-draft.md as the Devpost copy. Add the final public video URL, the public repository URL, and the live demo URL.
-2. Confirm the live demo, repository and video all open without signing in. Confirm the repository still contains only the synthetic DEMO-* fixture; keep the private real-data repository private.
-3. Submit the project on Devpost rather than leaving a draft. Save the confirmation/receipt and final public links.
-4. Complete this before travel. The official deadline is **30 September 2026, 21:00 PDT** (**1 October 2026, 12:00 Shanghai**), but the planned personal deadline is **25 September 2026**.
+- Keep all six segments in one final video. Target 4:10–4:40; trim pauses if approaching five minutes.
+- Use the actual recorded words for captions. Check 80% versus 82%, synthetic 6/60 versus private 17/96, and the 48 records that cannot be assessed at 90%.
+- Use docs/submission-draft.md for Devpost. Add the final public video URL, repository and live demo links. Check all three without signing in.
+- Submit formally and save the receipt; a draft is not a submission. Personal target: **25 September 2026**. Official deadline: **30 September 2026, 21:00 PDT / 1 October 2026, 12:00 Shanghai**.
+- Optional before recording: ask one person unfamiliar with the demo to identify a queued record, explain what “not assessable” means, save a reason and export. Record actual difficulties; this is a small usability check, not a field-validation study.

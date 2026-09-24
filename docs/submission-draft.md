@@ -6,7 +6,7 @@ Stream Risk Envelope
 
 ## One-line description
 
-A calibrated, human-in-the-loop review queue for checking consistency between stream-monitoring indicators.
+A stream-record review aid that explains exceptions, exposes uncertainty and exports reasoned human follow-ups.
 
 ## Track and problem
 
@@ -18,7 +18,7 @@ We developed the method using OneAquaHealth Resilience Map data in a private rep
 
 ## What the prototype does
 
-A standardised ridge model predicts one indicator from the other. Split conformal calibration forms an interval using a separate calibration split. A reading outside its interval enters a ranked human review queue. The reviewer sees the observed value, expected envelope and distance outside it, then can accept plausible variation, request a field or lab re-check, or escalate context. A control shows how nominal level changes interval width and review workload. Demo dispositions persist only in that browser.
+A standardised ridge model predicts one indicator from the other. Split conformal calibration forms an interval using a separate calibration split. A reading outside its interval enters a ranked human review queue. The reviewer sees the observed value, expected envelope and distance outside it, then can accept plausible variation, request a field or lab re-check, or escalate context. A control shows how nominal level changes interval width and review workload. Records with an interval too wide to judge appear in a separate further-assessment queue; they are not automatically cleared. The reviewer must provide a reason and explicitly save. Each saved decision captures its operating point and synthetic evidence, and can be exported in a CSV handoff. Decisions persist locally unless exported; no request is sent to a field or laboratory team.
 
 ## Evidence from the private retrospective analysis
 
@@ -34,7 +34,7 @@ Python, scikit-learn, pandas and NumPy implement the data access pattern, model,
 
 ## Limits and next step
 
-The real analysis is a single-season retrospective cross-section, not a forecast or field trial. A flag is a prompt to review co-variation, not a finding of measurement error, contamination or human-health risk. Marginal conformal coverage does not ensure equal coverage within each city. The public prototype has no authenticated reviewer identity or audit trail. A pilot would require permissioned data access, repeated local observations, city-specific calibration where possible, a responsible review team, and measurement of review time and re-check yield against a manual baseline.
+The real analysis is a single-season retrospective cross-section, not a forecast or field trial. A flag is a prompt to review co-variation, not a finding of measurement error, contamination or human-health risk. Standard conformal coverage requires exchangeability between calibration and test records. Cross-city distribution shift can violate that assumption, and marginal coverage would not ensure equal coverage within each city even when the assumptions hold. Observed interval coverage is not error-detection accuracy. The public prototype exports editable follow-up records but has no authenticated reviewer identity or audit history. A pilot would require permissioned data access, repeated local observations, city-specific calibration where possible, a responsible review team, and measurement of review time and re-check yield against a manual baseline.
 
 ## Links to fill before submitting
 

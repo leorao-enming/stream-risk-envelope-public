@@ -14,3 +14,11 @@ The public demo is synthetic. Its technical contribution is the inspectable work
 - [ ] Submit before the official deadline and verify the final public links.
 
 Remaining product limits: no external user study, screen-reader session, real-world impact measure, authenticated reviewer identity, or audit history.
+
+## Final review-workflow additions
+
+- [x] Separate the unassessable queue from outside-envelope records; show 48 unassessable records at 90%.
+- [x] Require an action and reason before saving, retaining the operating point and evidence.
+- [x] Export a synthetic CSV handoff across operating points; do not describe it as an authenticated audit history.
+- [x] Explain the exchangeability assumption and cross-city distribution-shift limitation.
+- [ ] Record the revised video including abstention, saving two decisions and exporting the handoff.

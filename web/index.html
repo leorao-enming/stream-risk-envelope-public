@@ -137,6 +137,15 @@
                                                             background: rgba(79,179,217,.10); }
   button.action[aria-pressed="true"]::after { content: "  ✓"; color: var(--accent); }
   .review-note { color: var(--muted); font-size: 11.5px; margin-top: 7px; }
+  .review-box label { display: block; margin: 12px 0 5px; }
+  .review-box textarea { box-sizing: border-box; width: 100%; min-height: 76px;
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 5px; padding: 8px; font: inherit; resize: vertical; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  #save-decision, #export-decisions { margin-top: 8px; }
+  #abstain-queue { max-height: 280px; overflow-y: auto; }
+  .assessment-summary { padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 6px; margin: 12px 0; font-size: 13px; }
   .queue-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
   .queue-head h2 { margin-bottom: 4px; }
   button.reset { color: var(--muted); padding: 4px 7px; }
@@ -226,7 +235,7 @@
     <h2>From observation to accountable action</h2>
     <div class="workflow" aria-label="Four step review workflow">
       <div class="step"><span class="num">01 · observe</span><strong>Measurements arrive</strong><span>Stream indicators enter the monitoring record.</span></div>
-      <div class="step"><span class="num">02 · check</span><strong>Envelope tests consistency</strong><span>Uncertainty is calibrated on held-out cities.</span></div>
+      <div class="step"><span class="num">02 · check</span><strong>Envelope tests consistency</strong><span>Calibrate on separate records; evaluate on a held-out city.</span></div>
       <div class="step"><span class="num">03 · prioritise</span><strong>Exceptions form a queue</strong><span>Evidence and workload stay visible.</span></div>
       <div class="step"><span class="num">04 · decide</span><strong>A person records the outcome</strong><span>Accept, re-check, or escalate context.</span></div>
     </div>
@@ -247,6 +256,7 @@
       </div>
     </div>
 
+    <div id="assessment-summary" class="assessment-summary" role="status" aria-live="polite"></div>
     <svg id="plot" viewBox="0 0 720 470" role="group"
          aria-labelledby="plot-title" aria-describedby="plot-desc"></svg>
     <h2 id="plot-title" class="vh">Pathogen indicator against faecal indicator</h2>
@@ -291,7 +301,7 @@
       <div class="deployment">
         <div class="step"><span class="num">now</span><strong>Offline proof of concept</strong><span>Static, reproducible and usable without network access.</span></div>
         <div class="step"><span class="num">next</span><strong>City-specific calibration</strong><span>Use local history when a city has enough repeated observations.</span></div>
-        <div class="step"><span class="num">then</span><strong>Monitoring integration</strong><span>Connect intake, reviewer identity and audit export after governance review.</span></div>
+        <div class="step"><span class="num">then</span><strong>Monitoring integration</strong><span>Connect intake, reviewer identity and an authenticated audit trail after governance review.</span></div>
       </div>
       <h2 id="limitations-heading">Limitations</h2>
       <div id="lims"></div>
@@ -311,6 +321,15 @@
     <a class="queue-review-link" id="queue-review-link" href="#detail-heading">Open decision controls for the selected site &uarr;</a>
     <ul class="queue" id="queue" aria-labelledby="queue-heading"></ul>
 
+    <h2 id="abstain-heading">Needs further assessment <span id="an"></span></h2>
+    <div class="note">The envelope is too wide to judge these records. They are not automatically cleared or classified as errors. Choose a follow-up or defer with a reason.</div>
+    <div class="progress" id="abstain-progress" role="status" aria-live="polite"></div>
+    <ul class="queue" id="abstain-queue" aria-labelledby="abstain-heading"></ul>
+    <h2>Review handoff</h2>
+    <button class="action" id="export-decisions" type="button" disabled>Export saved decisions (CSV)</button>
+    <div id="export-status" class="review-note" role="status" aria-live="polite"></div>
+    <div class="review-note">Exports contain saved decisions at their original operating points, including reasons and synthetic evidence. This editable handoff is not an authenticated audit trail. Saving or exporting does not send a re-check request to anyone.</div>
+
     <h2>Where the queue comes from</h2>
     <div id="bycity"></div>
 
@@ -328,26 +347,39 @@ const STATE_LABEL = {
   outside_envelope: "outside envelope — re-check",
   insufficient_evidence: "envelope too wide to judge",
 };
-const REVIEW_KEY = "sre:synthetic-review-decisions:v1";
+const REVIEW_KEY = "sre:synthetic-review-decisions:v2";
 const REVIEW_LABEL = {
   plausible: "accepted as plausible",
   recheck: "field re-check requested",
   context: "context escalation requested",
+  information: "additional information needed",
+  defer: "deferred pending evidence",
 };
 
 let DATA = null, level = "80", selected = null, order = [], decisions = loadDecisions();
+let drafts = {};
 
 const $ = id => document.getElementById(id);
 const fmt = (v, n = 3) => Number(v).toFixed(n);
+const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const decisionKey = site => `${DATA.meta.fixtureVersion}:${level}:${site}`;
+const savedDecision = site => decisions[decisionKey(site)];
 
 function loadDecisions() {
-  try { return JSON.parse(localStorage.getItem(REVIEW_KEY) || "{}"); }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(REVIEW_KEY) || "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed).filter(([key, r]) => r &&
+      r.synthetic === true && r.schemaVersion === 2 && REVIEW_LABEL[r.decision] &&
+      typeof r.reason === "string" && r.reason.trim() &&
+      key === `${r.fixtureVersion}:${r.nominalLevel}:${r.site}`));
+  }
   catch (_) { return {}; }
 }
 
 function saveDecisions() {
-  try { localStorage.setItem(REVIEW_KEY, JSON.stringify(decisions)); }
-  catch (_) { /* The demo still works when browser storage is unavailable. */ }
+  try { localStorage.setItem(REVIEW_KEY, JSON.stringify(decisions)); return true; }
+  catch (_) { return false; }
 }
 
 if (window.__DATA) { DATA = window.__DATA; boot(); } else { fail(); }
@@ -372,9 +404,11 @@ function boot() {
   });
   $("reset-decisions").addEventListener("click", () => {
     decisions = {};
+    drafts = {};
     saveDecisions();
     render();
   });
+  $("export-decisions").addEventListener("click", exportDecisions);
 
   $("lims").innerHTML = DATA.limitations.map(t => `<div class="note">${t}</div>`).join("");
 
@@ -433,11 +467,11 @@ function renderByCity(rows) {
       <tbody>${body}</tbody>
     </table>
     <div class="note warn">
-      The queue is <strong>not evenly spread</strong>, and the reason is the
-      method rather than the data: split conformal guarantees coverage across the
-      whole cohort, not within each city, so cities the model fits less well get
-      flagged more often. Read this table before deciding where to spend review
-      time.
+      Review rates can differ across cities because of the data distribution and
+      model fit. Standard split conformal coverage requires exchangeability
+      between calibration and test records; a new city may violate this assumption.
+      These are observed synthetic results, not guaranteed coverage for a new city.
+      A higher flag rate does not establish more data errors or greater pollution.
     </div>`;
 }
 
@@ -478,6 +512,7 @@ function render() {
   });
 
   const counts = rows.reduce((a, r) => (a[r.state] = (a[r.state] || 0) + 1, a), {});
+  $("assessment-summary").textContent = `${counts.outside_envelope || 0} records outside the envelope · ${counts.insufficient_evidence || 0} records not assessable at this setting · ${counts.consistent || 0} within the envelope. Within the envelope does not mean verified correct or safe.`;
   $("plot-desc").textContent =
     `${rows.length} sites at ${level}% nominal confidence: ` +
     `${counts.consistent || 0} consistent, ${counts.outside_envelope || 0} outside the ` +
@@ -599,74 +634,126 @@ function pick(site, rows, moveFocus) {
 }
 
 function syncQueueCurrent() {
-  $("queue").querySelectorAll("button[data-site]").forEach(b =>
-    b.setAttribute("aria-current", b.dataset.site === selected ? "true" : "false"));
+  document.querySelectorAll('#queue button[data-site], #abstain-queue button[data-site]').forEach(b =>
+    b.setAttribute('aria-current', b.dataset.site === selected ? 'true' : 'false'));
 }
 
 function drawQueue(rows) {
-  const flagged = rows.filter(r => r.state === "outside_envelope")
-                      .sort((a, b) => b.distanceOutside - a.distanceOutside);
-  $("queue-review-link").hidden = flagged.length === 0;
-  const reviewed = flagged.filter(r => decisions[r.site]).length;
-  $("qn").textContent = `(${flagged.length})`;
-  $("review-progress").textContent = `${reviewed} of ${flagged.length} priority records have a human disposition`;
-  $("queue").innerHTML = flagged.length
-    ? flagged.map(r => {
-      const decision = decisions[r.site];
-      return `<li><button class="qbtn" data-site="${r.site}"
-        aria-current="${r.site === selected}"
-        aria-label="${r.site}, ${r.city}, ${fmt(r.distanceOutside)} outside its envelope${decision ? ", " + REVIEW_LABEL[decision] : ""}">
+  const flagged = rows.filter(r => r.state === 'outside_envelope')
+    .sort((a, b) => b.distanceOutside - a.distanceOutside);
+  const abstained = rows.filter(r => r.state === 'insufficient_evidence')
+    .sort((a, b) => a.site.localeCompare(b.site));
+  $('queue-review-link').hidden = !flagged.length && !abstained.length;
+  $('qn').textContent = `(${flagged.length})`;
+  $('an').textContent = `(${abstained.length})`;
+  const fillQueue = (id, list, insufficient) => {
+    $(id).innerHTML = list.length ? list.map(r => {
+      const record = savedDecision(r.site);
+      const label = record ? REVIEW_LABEL[record.decision] : '';
+      const evidence = insufficient ? 'not assessable' : `${fmt(r.distanceOutside)} outside its envelope`;
+      return `<li><button class="qbtn" data-site="${r.site}" aria-current="${r.site === selected}"
+        aria-label="${r.site}, ${r.city}, ${evidence}${label ? ', ' + label : ''}">
         <span><span class="code">${r.site}</span> <span class="city">${r.city}</span></span>
-        <span><span class="dev">+${fmt(r.distanceOutside)}</span>
-        ${decision ? `<span class="decision">${REVIEW_LABEL[decision]}</span>` : ""}</span></button></li>`;
-    }).join("")
-    : `<li><div class="empty">Nothing queued at this confidence level.</div></li>`;
-  $("queue").querySelectorAll("button[data-site]").forEach(b =>
-    b.addEventListener("click", () => pick(b.dataset.site, rows, false)));
+        <span><span class="${insufficient ? 'city' : 'dev'}">${insufficient ? 'needs assessment' : '+' + fmt(r.distanceOutside)}</span>
+        ${label ? `<span class="decision">${label}</span>` : ''}</span></button></li>`;
+    }).join('') : `<li><div class="empty">${insufficient ? 'No records in this category at this setting.' : 'No records outside the envelope. Check the further-assessment queue below.'}</div></li>`;
+    $(id).querySelectorAll('button[data-site]').forEach(b =>
+      b.addEventListener('click', () => pick(b.dataset.site, rows, false)));
+  };
+  fillQueue('queue', flagged, false);
+  fillQueue('abstain-queue', abstained, true);
+  $('review-progress').textContent = `${flagged.filter(r => savedDecision(r.site)).length} of ${flagged.length} priority records have a human disposition at ${level}%`;
+  $('abstain-progress').textContent = `${abstained.filter(r => savedDecision(r.site)).length} of ${abstained.length} records have a saved follow-up at ${level}%`;
+  const count = Object.keys(decisions).length;
+  $('export-decisions').disabled = count === 0;
+  $('export-status').textContent = `${count} saved decision${count === 1 ? '' : 's'} across operating points. Only saved decisions are exported.`;
 }
 
 function showDetail(r) {
-  if (!r) { $("detail").innerHTML = '<span class="city">Select a point.</span>'; return; }
-  const others = Object.entries(r.others)
-    .map(([k, v]) => `<div class="row"><span>${k}</span><span>${fmt(v)}</span></div>`).join("");
-  const current = decisions[r.site] || "";
-  const reviewBox = r.state === "outside_envelope" || current ? `
+  if (!r) { $('detail').innerHTML = '<span class="city">Select a point.</span>'; return; }
+  const key = decisionKey(r.site), saved = savedDecision(r.site);
+  const draft = drafts[key] ||= {decision: saved?.decision || '', reason: saved?.reason || ''};
+  const options = r.state === 'insufficient_evidence'
+    ? [['information', 'Request additional information'], ['recheck', 'Request field or lab re-check'], ['defer', 'Defer pending evidence']]
+    : [['plausible', 'Accept as plausible variation'], ['recheck', 'Request field or lab re-check'], ['context', 'Escalate as contextual anomaly']];
+  const reviewBox = r.state !== 'consistent' || saved ? `
     <div class="review-box">
       <strong>Human disposition</strong>
       <div class="review-actions" role="group" aria-label="Disposition for ${r.site}">
-        <button class="action" type="button" data-review="plausible" aria-pressed="${current === "plausible"}">Accept as plausible variation</button>
-        <button class="action" type="button" data-review="recheck" aria-pressed="${current === "recheck"}">Request field or lab re-check</button>
-        <button class="action" type="button" data-review="context" aria-pressed="${current === "context"}">Escalate as contextual anomaly</button>
+        ${options.map(([value, label]) => `<button class="action" type="button" data-review="${value}" aria-pressed="${draft.decision === value}">${label}</button>`).join('')}
       </div>
-      <div class="review-note">Demo decisions stay in this browser only. They do not alter measurements or retrain the model.</div>
-    </div>` : "";
-  $("detail").innerHTML = `
+      <label for="review-reason">Reason and next step (required)</label>
+      <textarea id="review-reason" maxlength="500" rows="3" aria-describedby="decision-help">${escapeHTML(draft.reason)}</textarea>
+      <button class="action" id="save-decision" type="button" ${!draft.decision || !draft.reason.trim() ? 'disabled' : ''}>Save decision</button>
+      <div id="save-status" class="review-note" role="status" aria-live="polite">${saved ? `Saved at ${saved.nominalLevel}% on ${escapeHTML(saved.savedAt)}. Save again to replace this entry.` : 'No saved decision at this operating point.'}</div>
+      <div class="review-note" id="decision-help">Choose an action, give a reason, then save. The saved record captures this ${level}% setting and its evidence. Decisions stay in this browser unless exported; no request is sent to a field or lab team. No authenticated identity or audit history.</div>
+    </div>` : '';
+  $('detail').innerHTML = `
     <div class="state ${r.state}">${STATE_LABEL[r.state]}</div>
     <div style="font:13px var(--mono);margin-bottom:8px">${r.site} &middot; ${r.city}</div>
     <div class="row"><span>${DATA.meta.target}</span><span>${fmt(r.observed)}</span></div>
     <div class="row"><span>envelope</span><span>[${fmt(r.low)}, ${fmt(r.high)}]</span></div>
     <div class="row"><span>centre of envelope</span><span>${fmt(r.predicted)}</span></div>
-    ${r.distanceOutside > 0
-      ? `<div class="row"><span>distance outside</span><span>${fmt(r.distanceOutside)}</span></div>` : ""}
-    <div style="border-top:1px solid var(--line);margin:9px 0 6px"></div>
-    ${others}
+    ${r.distanceOutside > 0 ? `<div class="row"><span>distance outside</span><span>${fmt(r.distanceOutside)}</span></div>` : ''}
+    <div class="row"><span>${DATA.meta.predictor}</span><span>${fmt(r.others[PRED_KEY])}</span></div>
     ${reviewBox}
-    <div class="note" style="margin:10px 0 0;font-size:12.5px">
-      A flag means this reading does not match the co-variation seen across the
-      cohort and is worth re-checking. It is not a finding of contamination, and
-      not a statement about human health.
-    </div>`;
-  $("detail").querySelectorAll("button[data-review]").forEach(button =>
-    button.addEventListener("click", () => recordDecision(r.site, button.dataset.review)));
+    <div class="note" style="margin:10px 0 0;font-size:12.5px">${r.state === 'insufficient_evidence'
+      ? 'This interval is too wide for the model to assess this record. It is neither cleared nor automatically classified as erroneous. A person must choose the next step.'
+      : 'An outside-envelope reading warrants review, not a contamination or health diagnosis. A reading within the envelope is not verified correct or safe.'}</div>`;
+  const updateDraft = () => {
+    draft.reason = $('review-reason').value;
+    $('save-decision').disabled = !draft.decision || !draft.reason.trim();
+    $('save-status').textContent = 'Unsaved changes. Click Save decision to include them in the handoff.';
+    $('detail').querySelectorAll('button[data-review]').forEach(b =>
+      b.setAttribute('aria-pressed', b.dataset.review === draft.decision ? 'true' : 'false'));
+  };
+  $('detail').querySelectorAll('button[data-review]').forEach(b => b.addEventListener('click', () => {
+    draft.decision = b.dataset.review;
+    updateDraft();
+  }));
+  if ($('review-reason')) $('review-reason').addEventListener('input', updateDraft);
+  if ($('save-decision')) $('save-decision').addEventListener('click', () => recordDecision(r, draft));
 }
 
-function recordDecision(site, decision) {
-  if (!REVIEW_LABEL[decision]) return;
-  decisions[site] = decision;
-  saveDecisions();
-  const rows = DATA.levels[level];
-  showDetail(rows.find(r => r.site === site));
-  drawQueue(rows);
+function recordDecision(r, draft) {
+  if (!REVIEW_LABEL[draft.decision] || !draft.reason.trim()) return;
+  decisions[decisionKey(r.site)] = {
+    schemaVersion: 2, synthetic: true, fixtureVersion: DATA.meta.fixtureVersion,
+    site: r.site, city: r.city, nominalLevel: Number(level), state: r.state,
+    observed: r.observed, predictor: r.others[PRED_KEY], low: r.low, high: r.high,
+    distanceOutside: r.distanceOutside, decision: draft.decision,
+    reason: draft.reason.trim().slice(0, 500), savedAt: new Date().toISOString(),
+  };
+  const persisted = saveDecisions();
+  showDetail(r);
+  if (!persisted) $('save-status').textContent = 'Saved for this session only: browser storage is unavailable. Export before closing.';
+  drawQueue(DATA.levels[level]);
+}
+
+function decisionCSV() {
+  const fields = ['synthetic', 'fixtureVersion', 'site', 'city', 'nominalLevel', 'state',
+    'observed', 'predictor', 'low', 'high', 'distanceOutside', 'decision', 'reason', 'savedAt'];
+  const cell = value => {
+    let text = String(value ?? '');
+    // Neutralise spreadsheet formulas in free text, including leading whitespace.
+    if (/^\s*[=+@-]/.test(text) || /^[\t\r\n]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
+  const records = Object.values(decisions).sort((a, b) => a.site.localeCompare(b.site) || a.nominalLevel - b.nominalLevel);
+  return [fields, ...records.map(r => fields.map(f => r[f]))].map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
+}
+
+function exportDecisions() {
+  if (!Object.keys(decisions).length) return;
+  const url = URL.createObjectURL(new Blob(['\uFEFF' + decisionCSV()], {type: 'text/csv;charset=utf-8'}));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'stream-risk-envelope-SYNTHETIC-review.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $('export-status').textContent = `Export requested: ${Object.keys(decisions).length} saved decisions, with their original thresholds and reasons. No re-check request has been sent.`;
 }
 </script>
 </body>

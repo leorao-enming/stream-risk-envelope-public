@@ -2,7 +2,7 @@
 
 **Synthetic demonstration for the OneAquaHealth IEEE Global Hackathon 2026, Track 3.**
 
-Stream Risk Envelope illustrates a human review queue for stream-monitoring indicators. A ridge model predicts an illustrative faecal indicator from an illustrative pathogen indicator. Split conformal calibration sets an interval, and observations outside it are queued for a person to inspect. The reviewer can accept variation, request a field or lab re-check, or escalate context. A flag is not a diagnosis or a finding of contamination.
+Stream Risk Envelope illustrates a human review queue for stream-monitoring indicators. A ridge model predicts an illustrative faecal indicator from an illustrative pathogen indicator. Split conformal calibration sets an interval, and observations outside it are queued for a person to inspect. Records with intervals too wide to judge appear in a separate further-assessment queue. The reviewer chooses a follow-up, records a reason, and exports a synthetic review handoff. A flag is not a diagnosis or a finding of contamination.
 
 > **Data boundary:** Every observation, site code, city name, model result, count and chart in `web/` is generated from a fixed synthetic formula and random seed. None is an actual OneAquaHealth measurement or a transformed copy of one. Demo performance does not establish performance on real monitoring data.
 
@@ -29,9 +29,9 @@ uv run --locked python -m src.sre.build
 2. Within the other cities, split observations into model-fit and calibration groups.
 3. Fit a standardized ridge model and set an envelope from calibration residuals.
 4. Compare each held-out observation with its envelope at the selected nominal level.
-5. Rank observations outside the envelope for human review. Show the interval and preserve the reviewer's decision only in local browser storage.
+5. Rank outside-envelope observations for review and list unassessable records separately. Save each reasoned human decision with its operating point and evidence; optionally download a CSV handoff.
 
-`src/sre/model.py` contains the estimator and verdict logic. `src/sre/validate.py` contains baseline, transfer and coverage checks. The live interface recalculates the queue, operating table and accessible site table from the synthetic fixture. It makes no causal or health claim. Coverage is marginal, and a newly sampled monitoring regime needs its own validation.
+`src/sre/model.py` contains the estimator and verdict logic. `src/sre/validate.py` contains baseline, transfer and coverage checks. The live interface recalculates the queue, operating table and accessible site table from the synthetic fixture. It makes no causal or health claim. The standard conformal guarantee requires exchangeability of calibration and test records. Holding out a city does not establish this assumption; cross-city shift can invalidate the guarantee. Reported coverage is an empirical result, and a new monitoring regime needs its own validation.
 
 The API client and data-join code are included to make the *access method* inspectable. They can request available OneAquaHealth services for authorised local analysis. Their cached responses live under ignored `cache/` and are never used to generate the committed demo. Do not commit API responses, actual site-level values, model outputs computed from them, or screenshots of them. The MIT licence in this repository covers this code, not OneAquaHealth data or reuse rights.
 
@@ -54,7 +54,15 @@ The acceptance runner regenerates the fixture, checks it is unchanged, then rehe
 
 - All plotted results in the public demo are synthetic illustrations. The separate private retrospective evaluation does not establish prospective calibration, cross-city transfer under a new monitoring regime, time saving, re-check yield, environmental outcome or human-health outcome.
 - A flag means a value is inconsistent with the *synthetic* training cohort. It is a prompt for human review, not proof that the value is wrong.
-- The demo has no authenticated reviewer identity or audit trail. Decisions stay in the local browser only.
+- The demo has no authenticated reviewer identity or audit history. Decisions stay in the local browser unless exported. Saving or exporting a decision sends no request to a monitoring team.
 - A future pilot would require data governance, permitted access, appropriate local calibration and a responsible review team.
 
 Data-source acknowledgement: OneAquaHealth is a Horizon Europe project under grant agreement 101086521. This code and synthetic demonstration are independent of any endorsement by the project or funders.
+
+## Review handoff
+
+At 90%, this synthetic fixture has **0 outside-envelope records, 48 unassessable records and 12 within-envelope records**. An empty exception queue does not clear the dataset. Use **Needs further assessment** to request additional information, request a re-check, or defer pending evidence.
+
+Choose an action, enter **Reason and next step**, then click **Save decision**. **Export saved decisions (CSV)** exports all saved records across operating points, including the fixture version, synthetic label, site, city, nominal level, model state, observation, predictor, interval, distance, action, reason and local-device timestamp. Only saved text is exported. Decisions are keyed by fixture, operating point and site, so changing the slider does not overwrite previous evidence. Saving again at the same site and operating point replaces that entry; this is an editable handoff, not an audit log. Free-text spreadsheet formulas are neutralised in CSV exports.
+
+If browser storage is unavailable, the page reports session-only saving and prompts export before closing. Old v1 button-only choices are left untouched in browser storage but are not counted or exported as v2 reasoned decisions. Record them again with a reason if needed. **Reset demo decisions** clears the current v2 decisions and drafts.
