@@ -557,8 +557,8 @@ function drawPlot(rows) {
     <line class="axis" x1="${X(0)}" y1="${Y(0)}" x2="${X(0)}" y2="${Y(1)}"/>
     ${tickLabels}
     ${circles}
-    <text class="axis-label" x="${m.l+iw/2}" y="${H-10}" text-anchor="middle">illustrative ${DATA.meta.predictor}</text>
-    <text class="axis-label" transform="translate(16,${m.t+ih/2}) rotate(-90)" text-anchor="middle">illustrative ${DATA.meta.target}</text>`;
+    <text class="axis-label" x="${m.l+iw/2}" y="${H-10}" text-anchor="middle">${DATA.meta.predictor}</text>
+    <text class="axis-label" transform="translate(16,${m.t+ih/2}) rotate(-90)" text-anchor="middle">${DATA.meta.target}</text>`;
 
   $("plot").querySelectorAll("circle.pt").forEach(c => {
     c.addEventListener("click", () => pick(c.dataset.site, rows, false));
@@ -643,7 +643,7 @@ function showDetail(r) {
   $("detail").innerHTML = `
     <div class="state ${r.state}">${STATE_LABEL[r.state]}</div>
     <div style="font:13px var(--mono);margin-bottom:8px">${r.site} &middot; ${r.city}</div>
-    <div class="row"><span>illustrative ${DATA.meta.target}</span><span>${fmt(r.observed)}</span></div>
+    <div class="row"><span>${DATA.meta.target}</span><span>${fmt(r.observed)}</span></div>
     <div class="row"><span>envelope</span><span>[${fmt(r.low)}, ${fmt(r.high)}]</span></div>
     <div class="row"><span>centre of envelope</span><span>${fmt(r.predicted)}</span></div>
     ${r.distanceOutside > 0

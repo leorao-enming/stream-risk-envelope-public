@@ -6,6 +6,12 @@ Stream Risk Envelope illustrates a human review queue for stream-monitoring indi
 
 > **Data boundary:** Every observation, site code, city name, model result, count and chart in `web/` is generated from a fixed synthetic formula and random seed. None is an actual OneAquaHealth measurement or a transformed copy of one. Demo performance does not establish performance on real monitoring data.
 
+## Private evaluation and public demonstration
+
+The method was developed and retrospectively evaluated on actual OneAquaHealth Resilience Map data in a separate **private** repository. That analysis held out each of five cities in turn. At the default 80% nominal operating point, its aggregate results were 82% empirical coverage and 17 of 96 records queued for review; the fitted model beat a mean-prediction baseline in all five held-out cities. These figures describe consistency screening and review workload on the available retrospective records. They do **not** establish that a flagged record was erroneous, that review time was saved, or that environmental or human-health outcomes improved.
+
+The `web/` demo has a different, wholly synthetic fixture: its 60 fictional records and on-screen metrics must never be read as the private evaluation results. The private data-derived snapshot and history cannot be published under the project's data-access guidance, so the actual-data evaluation cannot be reproduced from this public repository alone. The code and synthetic fixture here make the proposed mechanism and interaction inspectable without redistributing source records.
+
 ## Open the demo
 
 Open `web/index.html` in a browser. It works offline and makes no network requests. The page loads `web/data.js`, a deterministic synthetic fixture. For a fresh regeneration:
@@ -46,7 +52,7 @@ The acceptance runner regenerates the fixture, checks it is unchanged, then rehe
 
 ## Scope and limitations
 
-- All plotted results are synthetic illustrations. No real-world calibration, cross-city transfer, time saving, re-check yield, environmental outcome or human-health outcome is claimed.
+- All plotted results in the public demo are synthetic illustrations. The separate private retrospective evaluation does not establish prospective calibration, cross-city transfer under a new monitoring regime, time saving, re-check yield, environmental outcome or human-health outcome.
 - A flag means a value is inconsistent with the *synthetic* training cohort. It is a prompt for human review, not proof that the value is wrong.
 - The demo has no authenticated reviewer identity or audit trail. Decisions stay in the local browser only.
 - A future pilot would require data governance, permitted access, appropriate local calibration and a responsible review team.

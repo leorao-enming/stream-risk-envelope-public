@@ -5,7 +5,7 @@ The public demo is synthetic. Its technical contribution is the inspectable work
 ## Required before submission
 
 - [x] Replace the real-data-derived browser payload with an independently generated synthetic fixture.
-- [x] Remove real-data-derived charts and numeric claims from the public-ready source tree.
+- [x] Remove real site-level records, charts, derived snapshots and per-site outputs from the public-ready source tree. Aggregate retrospective evaluation figures in the README and submission draft are identified as private-analysis results and are never presented as figures from the synthetic demo.
 - [x] Keep the private prototype and its history private; use a new history for the public repository.
 - [x] Publish the clean repository at https://github.com/leorao-enming/stream-risk-envelope-public and verify anonymous access to the README and synthetic payload.
 - [x] Run acceptance for the published implementation; the GitHub Actions run passed: https://github.com/leorao-enming/stream-risk-envelope-public/actions/runs/35838932170. Recheck the final submission commit if later edits change code or demo assets.
